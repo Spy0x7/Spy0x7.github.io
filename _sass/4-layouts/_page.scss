@@ -17,10 +17,25 @@
 }
 
 .page-image {
-  width: 200px;
-  height: 200px;
+  width: 457px;
+  bottom: 20%;
 }
 
+.image-box {
+  position: relative;
+  overflow: hidden;
+  width: 457px;
+  bottom: 20%;
+  background-color: $dark;
+  
+  @media only screen and (max-width: $desktop) {
+    padding-top: 55%;
+  }
+  
+  @media only screen and (max-width: $tablet) {
+    padding-top: 65%;
+  }
+}
 
 .page-head {
   margin: 40px 0;
