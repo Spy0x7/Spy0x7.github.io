@@ -24,7 +24,9 @@
 .image-box {
   position: relative;
   overflow: hidden;
-  background-color: wheat;
+  width: 457px;
+  bottom: 15%;
+  background-color: $dark;
   
   @media only screen and (max-width: $desktop) {
     padding-top: 55%;
