@@ -3,7 +3,6 @@ title: Safe -- Hackthebox Writeup
 published: true
 ayout: post
 date: 2021-08-2 18:54 +0600
-image: "https://raw.githubusercontent.com/Spy0x7/Spy0x7.github.io/master/assets/2020-03-19-Hackthebox_Safe/0.png"
 permalink: /Safe-Hackthebox-Writeup/
 tags: Safe -- Hackthebox Writeup 
 featured: false
@@ -12,6 +11,9 @@ featured: false
 # [](#header-1)Safe -- Hack the Box write-up
 
 **Safe** is a _retired_ machine from Hack the Box. It is rated as a easy machine, however, the user own difficulty is rated medium-hard (probably for containing a ROP exploitable binary, uncommon in this platform).
+![](https://raw.githubusercontent.com/Spy0x7/Spy0x7.github.io/master/assets/2020-03-19-Hackthebox_Safe/0.png_
+
+
 ## [](#header-2)Enumeration
 
 First, let's start running a quick scan to discover which ports are open.
