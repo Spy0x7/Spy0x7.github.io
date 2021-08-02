@@ -3,7 +3,7 @@ title: From XXE OoB to NTLM hash steal
 published: true
 ayout: post
 date: 2021-08-2 18:54 +0600
-image: "assets/2020-08-20-From-XXE-OOB-to-NTLM-thief/burp_collab.png"
+image: "https://raw.githubusercontent.com/Spy0x7/Spy0x7.github.io/master/assets/2020-08-20-From-XXE-OOB-to-NTLM-thief/burp_collab.png"
 permalink: /From-XXE-OOB-to-NTLM-thief/
 tags: From XXE OOB to NTLM-thief
 featured: false
