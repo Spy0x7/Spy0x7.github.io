@@ -4,6 +4,8 @@ date: 2021-08-2 18:54 +0600
 categories: [Cheatsheets,Scripts]
 tags: [Remote Code Execution,Groovy,RCE,Jenkins, Reverse Shell]
 image: /assets/Posts/groovy.jpg
+permalink: /Groovy-Script—RCE/
+
 ---
 
 > This cheatsheet describes various methods for executing remote code in Groovy Language to get an reverse shell.
