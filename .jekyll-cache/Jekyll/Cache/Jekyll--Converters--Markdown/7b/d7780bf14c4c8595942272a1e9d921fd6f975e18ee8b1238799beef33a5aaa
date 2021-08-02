@@ -1,0 +1,42 @@
+I"T	<p>Hello World, while Doing Bug Bounty Hunting i came accross some Special XSS Cases. In this blog Post i will write about them.</p>
+
+<h3 id="1-xss-that-works-only-in-mobile-devices">1) XSS That Works only in mobile Devices</h3>
+
+<p>Recently i was hunting on a program and testing parameters for XSS and that website has a strong waf since it is a banking related website</p>
+
+<ul>
+  <li>
+    <p>All tags are blocked and mostly all event handlers are blocked, i tried bypassing the waf and was about to give up.</p>
+  </li>
+  <li>
+    <p>I noticed normal strings like FUZZ are beign reflected but whenever i use it with an event handler in the payload, i am getting blocked by the waf.</p>
+  </li>
+  <li>
+    <p>So i tried all eventhandlers from <a href="https://portswigger.net/web-security/cross-site-scripting/cheat-sheet">Portswigger Cheatsheet</a> and only below event handlers gave a response of 200 OK</p>
+  </li>
+</ul>
+
+<div class="language-text"><div class="highlight"><pre class="highlight"><code>touchstart
+touchmove
+touchcancel
+touchend
+</code></pre></div></div>
+
+<p>Using them in the payload like this didn’t pop any alert, after googling about these eventhandlers a bit, i understood that these event handlers only work with mobile devices.</p>
+
+<div class="language-text"><div class="highlight"><pre class="highlight"><code>https://REDACTED.COM/SOMEPATH/Amount?UNIQUE_TICKET_ID=XXXXXXX&amp;LANG=EN&amp;name=0%22ontouchend%3Dalert(document.cookie)%20
+</code></pre></div></div>
+
+<p>The developers blocked all event handlers but not mobile event handlers.
+Using Toggle Device Toolbar in the chrome dev tools, we can simulate the mobile device environment, so i quickly changed that and clicking on name field popped an alert with cookies</p>
+
+<h3 id="2-xss-in-hidden-input">2) XSS in Hidden Input</h3>
+
+<p>You might be already familier with this one. But i didn’t knew about this, until recently one of the target i was hacking on, was vulnerable to this</p>
+
+<p>Portswigger has a good blog post -&gt; <a href="https://portswigger.net/research/xss-in-hidden-input-fields">Xss in Hidden Input Fields</a></p>
+
+<p>[+] I will keep updating this blog post when i found any interesting cases of xss. If you know any ping me on <a href="http://twitter.com/0xdln">twitter</a>. I will add them here and give you credits</p>
+<p> That's it for now. Cheers !!!  Happy Hacking :)
+</p>
+:ET

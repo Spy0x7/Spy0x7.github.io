@@ -1,0 +1,79 @@
+I"E<p>Hello World, this is my first blog which is related to one my recent finding i found in a bug bounty program. </p>
+
+<p>Usually whenever i see a Default IIS Page i used to skip the domain and move on to finding issues on other subdomains.
+But in Nahamcon 2021 <a href="http://twitter.com/infosec_au">@infosec_au</a> gave a talk on Hacking IIS 
+@infosec_au discussed a bunch of vulnerabilities to check whenever we came across a IIS SERVER</p>
+
+<h6 id="i-highly-recommend-you-go-through-the-talk">I highly recommend you go through the talk</h6>
+
+<p><a href="https://www.youtube.com/watch?v=cqM-MdPkaWo">Hacking IIS</a></p>
+
+<h3 id="shortname-scanning">Shortname Scanning</h3>
+
+<ul>
+  <li>As an initial step i will check if the website is vulnerable to <a href="https://www.rapid7.com/db/modules/auxiliary/scanner/http/iis_shortname_scanner/">IIS tilde Vulnerability</a></li>
+</ul>
+
+<p>To check this vulnerability there are 2 tools which i recommend</p>
+<ul>
+  <li><a href="https://github.com/irsdl/IIS-ShortName-Scanner">IIS Shortname Scanner</a> and <a href="https://github.com/sw33tLie/sns">SNS</a></li>
+</ul>
+
+<div class="language-bash"><div class="highlight"><pre class="highlight"><code>─$ sns -u  https://sub.redacted.com/              
+
+ Proxy:   None
+ Target:  https://sub.redacted.com/
+ Threads: 50
+ Timeout: 30
+________________________________________________
+
+ - aspnet~1 (Directory)
+________________________________________________                    
+                                                                                                               
+SHORTNAME       FULL NAME       TYPE                                                                           
+aspnet~1        Not found       Directory
+</code></pre></div></div>
+
+<ul>
+  <li>I used sns but the result contains only one Directory which is the default directory [aspnet_client] which gave 403 on visiting the directory</li>
+</ul>
+
+<p>Nothing much here so i tried traditional content Discovery</p>
+
+<h3 id="fuzzing">Fuzzing</h3>
+
+<ul>
+  <li>
+    <p>Most of the times on default IIS Default Webpages there is a high chance of finding zip files and backup files</p>
+  </li>
+  <li>
+    <p>We cannot rely blindly on IIS Shortname Scanner, So i started general content discovery</p>
+
+    <ul>
+      <li>Also Content Discovery on IIS Servers is easy because of they are Case Insensitive</li>
+    </ul>
+  </li>
+  <li>
+    <p>So i ran ffuf with jhaddix content_discovery_all.txt</p>
+  </li>
+</ul>
+
+<div class="language-bash"><div class="highlight"><pre class="highlight"><code> ffuf -u https://sub.redacted.com/FUZZ.zip -w content_discovery_all.txt -fc 404
+</code></pre></div></div>
+
+<p>and http://sub.redacted.com/ws.zip gave 200 OK</p>
+
+<ul>
+  <li>
+    <p>Upon visiting the url i am able to downloaded the whole source code. The source code contains many sensitive api keys and dll files</p>
+  </li>
+  <li>
+    <p>I reported it and they resolved the issue immediately</p>
+  </li>
+  <li>
+    <p>Whenever you find a Default IIS Page on a web server,  fuzz it you might find something interesting</p>
+  </li>
+</ul>
+
+<p>Hope you learned something new :)</p>
+:ET
