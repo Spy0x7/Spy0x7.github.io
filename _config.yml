@@ -2,7 +2,6 @@
 #-------------------------------
 # General Site Settings
 title: Nasur Ullah
-logo: /images/logo.svg # You can add own logo. For example '/images/logo.png'.
 tagline: CyberSecurity bug bounty writeups.
 description: Bug Hunter And Computer Science Student.
 baseurl: "/" # The subpath of your site, e.g. /blog
