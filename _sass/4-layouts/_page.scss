@@ -20,12 +20,14 @@
   position: absolute;
   top: 0;
   max-width: 100%;
+  max-height: 100%;
   object-fit: cover;
   user-select: none;
 }
 
 .image-box {
   position: relative;
+  max-width: 100%;
   max-width: 100%;
   overflow: hidden;
   background-color: $dark;
