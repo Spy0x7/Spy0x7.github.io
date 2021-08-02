@@ -18,16 +18,14 @@
 
 /* Logo */
 .logo__link {
+  font-size: 14px;
+  margin-left: 0;
+  color: #545454;
+  font-weight: 400;
+  text-transform: capitalize;
+  font-style: italic;
   font-family: 'Mansalva', cursive;
-  font-size: 27px;
-  line-height: 1;
-  font-weight: 700;
-  vertical-align: middle;
-  color: $text-color;
-  text-transform: uppercase;
-  text-decoration: none;
-  letter-spacing: 0px;
-  transition: none;
+  position: relative;
   &:hover {
     color: $text-color;
   }
