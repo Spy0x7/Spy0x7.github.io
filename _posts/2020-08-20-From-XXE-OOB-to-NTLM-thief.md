@@ -3,12 +3,14 @@ title: From XXE OoB to NTLM hash steal
 published: true
 ayout: post
 date: 2021-08-2 18:54 +0600
-image: "https://raw.githubusercontent.com/Spy0x7/Spy0x7.github.io/master/assets/2020-08-20-From-XXE-OOB-to-NTLM-thief/burp_collab.png"
 permalink: /From-XXE-OOB-to-NTLM-thief/
 tags: From XXE OOB to NTLM-thief
 featured: false
 ---
 I am writing this post because of a recent chain of cool vulnerabilities I got the opportuninty to exploit during a pentest.
+
+![](https://raw.githubusercontent.com/Spy0x7/Spy0x7.github.io/master/assets/2020-08-20-From-XXE-OOB-to-NTLM-thief/burp_collab.png)
+
 
 For security reasons, I am not going to reveal the name of the company, although the bugs have been mitigated.
 The vulnerability got to compromise an API through an [XXE OOB](https://portswigger.net/web-security/xxe/blind) vulnerability, from where I could read local files and also exfiltrate valuable data, such as domain name, username and NTLM hash. Finally, I *sorta* got access to a port scan just to look for internal ports.
