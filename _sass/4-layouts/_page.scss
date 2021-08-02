@@ -27,14 +27,6 @@
   width: auto;
   height: auto;
   background-color: $dark;
-  
-  @media only screen and (max-width: $desktop) {
-    padding-top: 55%;
-  }
-  
-  @media only screen and (max-width: $tablet) {
-    padding-top: 65%;
-  }
 }
 
 .page-head {
