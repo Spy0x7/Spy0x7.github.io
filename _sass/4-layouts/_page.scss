@@ -19,6 +19,9 @@
 .page-image {
   position: absolute;
   text-align: center;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
   top: 0;
   width: 498px;
   height: 100%;
@@ -29,6 +32,9 @@
 .image-box {
   position: relative;
   width: 498px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
   padding-top: 50%;
   border-radius: 30px;
   overflow: hidden;
