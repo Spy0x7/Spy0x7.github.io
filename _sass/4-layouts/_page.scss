@@ -27,8 +27,8 @@
 .image-box {
   position: relative;
   padding-top: 50%;
-  left: 50%;
-  right: 50%;
+  left: auto;
+  right: auto;
   border-radius: 30px;
   overflow: hidden;
   background-color: $dark;
