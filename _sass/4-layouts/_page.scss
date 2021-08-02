@@ -24,7 +24,8 @@
 .image-box {
   position: relative;
   overflow: hidden;
-  width: 80px;
+  width: auto;
+  height: auto;
   bottom: 20%;
   background-color: $dark;
   
