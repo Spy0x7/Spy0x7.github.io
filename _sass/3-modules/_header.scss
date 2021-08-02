@@ -16,7 +16,22 @@
   align-items: center;
 }
 
-
+/* Logo */
+.logo__link {
+  font-family: Arial;
+  font-size: 27px;
+  line-height: 1;
+  font-weight: 700;
+  vertical-align: middle;
+  color: black;
+  text-transform: uppercase;
+  text-decoration: none;
+  letter-spacing: 0px;
+  transition: none;
+  &:hover {
+    color: black;
+  }
+}
 
 .logo__image {
   max-height: 40px;
