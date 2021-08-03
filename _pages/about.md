@@ -2,7 +2,6 @@
 layout: page
 title: About
 permalink: /about/
-image: "/images/about.jpg"
 seo:
   - name: "About Nasur Ullah"
   - type: Organization
