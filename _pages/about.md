@@ -27,7 +27,7 @@ seo:
                         </div>
                         <br>
                             <br>
-                            <a class="twitter-timeline" data-height="1000000" data-theme="dark" data-chrome="transparent nofooter noborders noheader noscrollbar"
+                            <a class="twitter-timeline" data-height="10000" data-theme="dark" data-chrome="transparent nofooter noborders noheader noscrollbar"
                                 href="https://twitter.com/Spy0x7?ref_src=twsrc%5Etfw">Tweets by Spy0x7</a>
                             <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
                     </div>
