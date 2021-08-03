@@ -16,7 +16,7 @@ layout: default
           <br>
           <span class="elementor-button-text">Check my Recent Write-Ups </span>
           <div class="row grid">
-            {% if site.posts.size > 0 %}
+            {% if site.posts.size > 3 %}
               {% for post in paginator.posts %}
                 {% include article-content.html %}
               {% endfor %}
