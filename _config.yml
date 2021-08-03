@@ -1,7 +1,7 @@
 ---
 #-------------------------------
 # General Site Settings
-title: Nasur Ullah
+title: NASUR ULLAH
 tagline: CyberSecurity bug bounty writeups.
 description: Bug Hunter And Computer Science Student.
 baseurl: "/" # The subpath of your site, e.g. /blog
@@ -16,7 +16,7 @@ author:
 #-------------------------------
 # Hero Settings
 hero:
-  title: Nasur Ullah
+  title: NASUR ULLAH
   description: A Young Security Researcher Who Loves to Automated Scripts.
 
 #-------------------------------
