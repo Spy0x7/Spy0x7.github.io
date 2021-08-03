@@ -106,6 +106,7 @@
             .nav__link {
                 position: relative;
                 font-size: 16px;
+                text-shadow: 0 0 10px #5dcf28, 0px 0px 10px #40ca16, 0 0 10px #d41b1b, 0 0 10px #1ce2d8;
                 font-weight: 400;
                 text-decoration: none;
                 color: $white;
@@ -150,6 +151,7 @@
             .nav__link {
                 position: relative;
                 font-size: 18px;
+                text-shadow: 0 0 10px #5dcf28, 0px 0px 10px #40ca16, 0 0 10px #d41b1b, 0 0 10px #1ce2d8;
                 color: $text-color;
             }
             @media only screen and (max-width: $mobile) {
