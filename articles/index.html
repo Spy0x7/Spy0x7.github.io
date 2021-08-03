@@ -1,34 +1,43 @@
----
-layout: index
----
+<section class="content">
+   {% for post in paginator.posts %}
+      {% include frontpage_post %}
+   {% endfor %}
+</section>
 
-<div id="home">
-  <h1>{{ site.title }}</h1>
-  <hr />
+{% if paginator.total_pages != 1 %}
+<section class="pagination">
+   <ul>
+      {% for i in (1..paginator.total_pages) %}
+         {% if forloop.first == true %}
+            {% if paginator.page == 1 %}
+               <li class="prev disabled"><a>&larr; Previous</a></li>
+            {% else %}
+               {% if paginator.page == 2 %}
+                  <li class="prev"><a href="{{ site.url }}">&larr; Previous</a></li>
+               {% else %}
+                  <li class="prev"><a href="{{ site.url }}/page/{{ (i - 1) }}">&larr; Previous</a></li>
+               {% endif %}
+            {% endif %}
+         {% endif %}
 
-<ol class="posts">
-  {% for post in paginator.posts %}
-  {% assign seriesPost = nil %}
-  {% if post.series == nil %}
-  {% if post.series_slug != nil %} {% assign seriesPost = '(Series)' %} {% endif %}
-    <li class="post-listing">
-      <img class="post__image" src="/static/img/{{ post.cover_image}}" alt="{{ post.cover_alt }}" />
-      <div class="post__text">
-        <a class="post__title" href="{{ post.url }}">{{ post.title }}</a><br>
-        <span>
-          {{ post.date | date_to_string }} &bull;
-          {% assign words = post.content | number_of_words %}
-          {% if words < 360 %}
-            1 min read
-          {% else %}
-            {{ words | divided_by:180 }} min read
-          {% endif %}
-        </span>
-        {{ post.excerpt }}
-      </div>
-    </li>
-    {% endif %}
-    {% endfor %}
-  </ol>
+         {% if paginator.page == i %}
+            <li class="disabled"><a>{{ i }}</a></li>
+         {% else %}
+            {% if i == 1 %}
+               <li><a href="{{ site.url }}">{{ i }}</a></li>
+            {% else %}
+               <li><a href="{{ site.url }}/page/{{ i }}">{{ i }}</a></li>
+            {% endif %}
+         {% endif %}
 
-  <!-- <div class="sidebar-right sidebar"></div> -->
+         {% if forloop.last == true %}
+            {% if paginator.page == paginator.total_pages %}
+               <li class="next disabled"><a>Next &rarr;</a></li>
+            {% else %}
+               <li class="next"><a href="{{ site.url }}/page/{{ (i + 1) }}">Next &rarr;</a></li>
+            {% endif %}
+         {% endif %}
+      {% endfor %}
+   </ul>
+</section>
+{% endif %}
