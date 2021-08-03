@@ -27,13 +27,14 @@
     line-height: 1;
     font-weight: 700;
     vertical-align: middle;
-    color: rgb(15, 35, 216);
+    color: rgb(211, 233, 19);
     text-transform: uppercase;
     text-decoration: none;
     letter-spacing: 0px;
     transition: none;
     &:hover {
         color: rgb(31, 230, 13);
+        text-shadow: 0 0 10px #d40b91c4, 0px 0px 10px #861beb, 0 0 10px #684de2, 0 0 10px #8971f8;
     }
 }
 
