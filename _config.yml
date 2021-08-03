@@ -16,9 +16,8 @@ author:
 #-------------------------------
 # Hero Settings
 hero:
-  title: I'AM NASUR ULLAH
+  title: I Am Nasur Ullah
   description: A Young Security Researcher Who Loves to Automated Scripts.
-  image: "/images/cover.jpg"
 
 #-------------------------------
 # Contact Settings
