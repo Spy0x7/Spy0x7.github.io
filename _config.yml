@@ -62,7 +62,7 @@ plugins:
   - jekyll/tagging
   - jekyll-seo-tag
 
-paginate: 9
+paginate: 1
 paginate_path: "/articles/:num"
 
 # Pages Path
