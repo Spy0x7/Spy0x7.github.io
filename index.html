@@ -1,28 +1,23 @@
----
-layout: default
----
-
-{% include hero.html %}
+--- layout: default --- {% include hero.html %}
 
 <div class="container">
-  <div class="row">
-    <div class="col col-12">
-      <div class="container__inner">
-        <div class="contaniner__inner-box">
-          <br>
-          <center><h3 style="color:Tomato;">Blogs</h3></center>
+    <div class="row">
+        <div class="col col-12">
+            <div class="container__inner">
+                <div class="contaniner__inner-box">
+                    <br>
+                    <center>
+                        <h3 style="color:Tomato;">Blogs</h3>
+                    </center>
+
+                    <br>
                     <div class="row grid">
-            {% if site.posts.size > 3 %}
-              {% for post in paginator.posts %}
-                {% include article-content.html %}
-              {% endfor %}
-            {% endif %}
-          </div>
+                        {% if site.posts.size > 0 %} {% for post in paginator.posts %} {% include article-content.html %} {% endfor %} {% endif %}
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
 </div>
-          <center><div class=text-box">Check my Recent Write-Ups</div></center>
 
 {% include pagination.html %}
