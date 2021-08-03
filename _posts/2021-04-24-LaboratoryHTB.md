@@ -4,7 +4,15 @@ date: 2021-08-2 18:54 +0600
 categories: [HackTheBox,Linux Machines]
 tags: hackthebox, laboratory, ctf
 image: /assets/Posts/Laboratory.png
-permalink: /HackTheBox—Laboratory—Writeup/
+---
+
+---
+title: "HackTheBox—Cache—Writeup"
+date: 2021-08-2 18:54 +0600
+categories: [HackTheBox,Linux Machines]
+tags: hackthebox, Cache, ctf,
+image: /assets/Posts/Cache.png
+permalink: /HackTheBox—Cache—Writeup/
 ---
 
 > Laboratory starts off with discovering an vulnerable GitLab instance running on the box. We'll refer an HackerOne report to exploit a CVE associated with it to get Arbitrary file read vulnerability and chain it to get obtain Remote Code execution on the GitLab container. Next we make use of Gitlab rails console to manipulate active user data and gain access to admin's private repository, where we discover an SSH key. For escalating privileges to root we exploit a SUID binary which doesn't call `chmod` binary from it's absolute path, we forge an malicious chmod binary, update the PATH which results it to run as root.

@@ -18,6 +18,8 @@ author:
 hero:
   title: I'am Nasur ullah
   description: A Young Security Researcher Who Loves to Automated Scripts.
+  image: "/images/cover.jpg"
+
 #-------------------------------
 # Contact Settings
 contact:
@@ -70,6 +72,19 @@ defaults:
       path: "_pages"
     values:
       permalink: /:basename:output_ext
+
+# Prefer color scheme setting.
+#
+# Note: Keep empty will follow the system prefer color by default,
+# and there will be a toggle to switch the theme between dark and light
+# on the bottom left of the sidebar.
+#
+# Available options:
+#
+#     light  - Use the light color scheme
+#     dark   - Use the dark color scheme
+#
+theme_mode:   # [light|dark]
 
 include:
   - _pages

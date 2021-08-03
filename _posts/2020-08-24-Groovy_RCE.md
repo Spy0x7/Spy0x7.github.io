@@ -10,6 +10,8 @@ permalink: /Groovy-Script—RCE/
 
 > This cheatsheet describes various methods for executing remote code in Groovy Language to get an reverse shell.
 
+![](/assets/Posts/groovy.jpg)
+
 ## Method 1:
 
 ```console
