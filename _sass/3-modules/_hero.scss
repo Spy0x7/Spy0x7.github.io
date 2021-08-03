@@ -67,11 +67,10 @@
 }
 
 .hero__title {
-    font-size: 80px;
-    margin: 0;
+    font-size: 57px;
+    margin: 0 0 10px;
+    color: #e8eee3;
     letter-spacing: 0px;
-    font-family: 'Courier New', Courier, monospace;
-    color: red;
     text-shadow: 0 0 10px #000000, 0px 0px 10px #000000, 0 0 10px #000000, 0 0 10px #000000;
     @media only screen and (max-width: $mobile) {
         font-size: 43px;
