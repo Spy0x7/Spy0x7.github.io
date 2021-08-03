@@ -9,6 +9,9 @@ seo:
 ---
 
 <p> A Young Security Researcher Who Loves to Automated Scripts. </p>
+<p>Ethical Hacker | Penetration Tester | CTF Player</p>
+<p> If you have any other questions please feel free to contact me </p> [@Spy0x7](http://twitter.com/Spy0x7).
+
 <div id="main">
         <div class="row">
             <div class="col-12 col-lg-11 col-xl-8">
@@ -16,7 +19,6 @@ seo:
                     <div class="post-content">
                         <div>
                             <div>
-                                <p>Ethical Hacker | Penetration Tester | CTF Player</p>
                                 <link rel="stylesheet" href="/typewritter/style.css"/>
                                 <div id="app"></div>
                                 <script src="https://unpkg.com/typewriter-effect@latest/dist/core.js"></script>
@@ -31,5 +33,3 @@ seo:
                     </div>
                 </div>
             </div>
-
-<p> If you have any other questions please feel free to contact me </p> [@Spy0x7](http://twitter.com/Spy0x7).
