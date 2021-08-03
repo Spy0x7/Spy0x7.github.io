@@ -13,11 +13,10 @@ seo:
         <div class="row">
             <div class="col-12 col-lg-11 col-xl-8">
                 <div id="page" class="post pb-5 pl-1 pr-1 pl-sm-2 pr-sm-2 pl-md-4 pr-md-4 pl-xl-3 mb-md-4">
-                    <h1 class="dynamic-title">About-Me</h1>
                     <div class="post-content">
                         <div>
                             <div>
-                                <h2 class="h2">Ethical Hacker | Penetration Tester | CTF Player</h2>
+                                <p>Ethical Hacker | Penetration Tester | CTF Player</p>
                                 <link rel="stylesheet" href="/typewritter/style.css"/>
                                 <div id="app"></div>
                                 <script src="https://unpkg.com/typewriter-effect@latest/dist/core.js"></script>
@@ -33,5 +32,4 @@ seo:
                 </div>
             </div>
 
-<p>Ethical Hacker | Penetration Tester | CTF Player</p>
 <p> If you have any other questions please feel free to contact me </p> [@Spy0x7](http://twitter.com/Spy0x7).
