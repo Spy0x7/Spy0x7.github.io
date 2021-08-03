@@ -21,20 +21,24 @@
 
 .page-image {
     position: absolute;
-    top: 0;
-    width: 761px;
     text-align: center;
-    height: 236px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    top: 0;
+    width: 498px;
+    height: 100%;
     object-fit: cover;
     user-select: none;
 }
 
 .image-box {
     position: relative;
+    width: 498px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
     padding-top: 50%;
-    width: 761px;
-    text-align: center;
-    height: 236px;
     border-radius: 30px;
     overflow: hidden;
     background-color: $dark;
