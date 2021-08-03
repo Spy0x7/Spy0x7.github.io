@@ -1,0 +1,43 @@
+<section class="content">
+   {% for post in paginator.posts %}
+      {% include frontpage_post %}
+   {% endfor %}
+</section>
+
+{% if paginator.total_pages != 1 %}
+<section class="pagination">
+   <ul>
+      {% for i in (1..paginator.total_pages) %}
+         {% if forloop.first == true %}
+            {% if paginator.page == 1 %}
+               <li class="prev disabled"><a>&larr; Previous</a></li>
+            {% else %}
+               {% if paginator.page == 2 %}
+                  <li class="prev"><a href="{{ site.url }}">&larr; Previous</a></li>
+               {% else %}
+                  <li class="prev"><a href="{{ site.url }}/page/{{ (i - 1) }}">&larr; Previous</a></li>
+               {% endif %}
+            {% endif %}
+         {% endif %}
+
+         {% if paginator.page == i %}
+            <li class="disabled"><a>{{ i }}</a></li>
+         {% else %}
+            {% if i == 1 %}
+               <li><a href="{{ site.url }}">{{ i }}</a></li>
+            {% else %}
+               <li><a href="{{ site.url }}/page/{{ i }}">{{ i }}</a></li>
+            {% endif %}
+         {% endif %}
+
+         {% if forloop.last == true %}
+            {% if paginator.page == paginator.total_pages %}
+               <li class="next disabled"><a>Next &rarr;</a></li>
+            {% else %}
+               <li class="next"><a href="{{ site.url }}/page/{{ (i + 1) }}">Next &rarr;</a></li>
+            {% endif %}
+         {% endif %}
+      {% endfor %}
+   </ul>
+</section>
+{% endif %}
