@@ -1,69 +1,40 @@
-<!--
-  The Head
--->
-
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
-  {% if page.layout == 'home' or page.layout == 'post' %}
-
-    {% if site.google_analytics.pv.proxy_endpoint %}
-      <meta name="pv-proxy-endpoint" content="{{ site.google_analytics.pv.proxy_endpoint }}">
-    {% endif %}
-
-    {% if site.google_analytics.pv.cache_path %}
-      <meta name="pv-cache-path" content="{{ site.google_analytics.pv.cache_path | relative_url }}">
-    {% endif %}
-
-  {% endif %}
-
-  {% seo title=false %}
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <title>
-  {%- unless page.layout == "home" -%}
-    {{ page.title | append: " | "}}
-  {%- endunless -%}
-    {{ site.title }}
+    {% if page.title %}{{ page.title }}{% else %}{{ site.title }}{% endif %}
   </title>
+  <meta
+    name="description"
+    content="{% if page.description %}{{ page.description | strip_html | strip_newlines | truncate: 160 }}{% else %}{{ site.description }}{% endif %}"
+  />
 
-  {% include favicons.html %}
+  <link
+    rel="canonical"
+    href="{{ page.url | replace:'index.html','' | absolute_url }}"
+  />
+  <link rel="alternate" type="application/rss+xml" title="{{ site.title | escape
+  }}" href="{{ "/feed.xml" | relative_url }}">
 
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-  <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+  <!-- Fonts -->
+  <link
+    href="https://fonts.googleapis.com/css?family=Josefin+Sans:400,600%7CPoppins:400,600,700&display=swap"
+    rel="stylesheet"
+  />
 
-  <!-- GA -->
-  {% if jekyll.environment == 'production' %}
-    <link rel="preconnect" href="https://www.google-analytics.com" crossorigin="use-credentials">
-    <link rel="dns-prefetch" href="https://www.google-analytics.com">
+  <!-- Ionicons -->
+  <link
+    href="https://unpkg.com/ionicons@4.2.2/dist/css/ionicons.min.css"
+    rel="stylesheet"
+  />
 
-    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin="anonymous">
-    <link rel="dns-prefetch" href="https://www.googletagmanager.com">
-
-    {% if site.google_analytics.pv.proxy_endpoint %}
-      {% assign proxy_url = site.google_analytics.pv.proxy_endpoint
-        | replace: "https://", "" | split: "/" | first | prepend: "https://" %}
-
-      <link rel="preconnect" href="{{ proxy_url }}" crossorigin="use-credentials">
-      <link rel="dns-prefetch" href="{{ proxy_url }}">
-    {% endif %}
-  {% endif %}
-
-  <!-- jsDelivr CDN -->
-  <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
-
-  <!-- Bootstrap -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css">
-
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.11.2/css/all.min.css">
-
-  {% include css-selector.html %}
-
-  <!-- JavaScript -->
-
-  <script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
-
+  <style>
+    {% capture include_to_scssify %}
+      {% include main.scss %}
+    {% endcapture %}
+    {{ include_to_scssify | scssify }}
+  </style>
+  {% seo %}
 </head>
