@@ -1,57 +1,45 @@
-/*!
-  Style for Homepage
-  v2.0
-  https://github.com/cotes2020/jekyll-theme-chirpy
-  © 2019 Cotes Chung
-  MIT License
-*/
+---
+# Style for Homepage
+# v2.0
+# https://github.com/cotes2020/jekyll-theme-chirpy
+# © 2019 Cotes Chung
+# MIT License
+---
 
+{% include_relative _addon/main.scss %}
 
 #post-list {
-    margin-top: 1rem;
-    padding-right: .5rem;
-    .post-meta {
-      i:not(:first-child) { // post-meta icons on HOME
-        margin-left: 1.5rem;
-      }
-    }
-  }
-  
-  .pagination {
-    font-size: 1rem;
-    a:hover {
-      text-decoration: none;
-    }
-  }
-  
+  margin-top: 1rem;
+  padding-right: .5rem;
+
   .post-preview {
     padding-top: 1.5rem;
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--main-border-color);
-    >h1 {
+
+    h1 {
       font-size: 1.4rem;
       margin: 0;
+      ~i { // pinned icon
+        font-size: .86rem;
+      }
     }
-    i.far { /* fontawesome icons */
-      font-size: 86%;
+
+    .post-meta {
+      i {
+        font-size: .73rem;
+        &:not(:first-child) { // post-meta icons on the homepage
+          margin-left: 1.5rem;
+        }
+      }
     }
+
     .post-content {
       margin-top: .6rem;
       margin-bottom: .6rem;
       color: var(--post-list-text-color);
-      img {
-        margin-top: .5rem;
-        margin-bottom: 1.5rem;
-        max-width: 100%;
-        height: auto;
-        // filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.08));
-        position: relative;
-        left: 50%;
-        -webkit-transform: translateX(-50%);
-        -ms-transform: translateX(-50%);
-        transform: translateX(-50%);
-      }
-      >p { /* Make preview shorter in Home page*/
+      >p {
+        /* Make preview shorter on the homepage */
         margin: 0;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -60,8 +48,17 @@
         -webkit-box-orient: vertical;
       }
     }
+
+  } // .post-preview
+
+} // #post-list
+
+.pagination {
+  font-size: 1rem;
+  a:hover {
+    text-decoration: none;
   }
-  
+
   .page-item {
     .page-link {
       color: var(--btn-patinator-text-color);
@@ -79,6 +76,9 @@
       border: 1px solid var(--btn-paginator-border-color);
       font-family: 'Lato', sans-serif;
       background-color: var(--button-bg);
+      &:hover {
+        background-color: var(--btn-paginator-hover-color)
+      }
     }
     &.active {
       .page-link {
@@ -101,40 +101,45 @@
       border-radius: 50%;
     }
     &:not(:last-child) {
-      margin-right: 0.6rem;
+      margin-right: 0.7rem;
     }
-  
   } // .page-item
-  
-  
-  @media all and (max-width: 576px) {
-    #post-list .post-meta>span i:not(:first-child) {
-      margin-left: 1rem;
-    }
+
+} // .pagination
+
+@media all and (max-width: 576px) {
+  #post-list .post-meta>span i:not(:first-child) {
+    margin-left: 1rem;
   }
-  
-  /* Hide SideBar and TOC */
-  @media all and (max-width: 830px) {
-    .pagination {
-      justify-content: center;
-    }
+}
+
+/* Hide SideBar and TOC */
+@media all and (max-width: 830px) {
+  .pagination {
+    justify-content: center;
   }
-  
-  /* Sidebar is visible */
-  @media all and (min-width: 831px) {
-    .pagination {
-      font-size: .85rem;
-    }
-  
+}
+
+/* Sidebar is visible */
+@media all and (min-width: 831px) {
+
+  #post-list {
+    margin-top: 1.5rem;
+  }
+
+  .pagination {
+    font-size: .85rem;
     .page-item .page-link {
       width: 2.2rem;
       height: 2.2rem;
     }
   }
-  
-  /* Pannel hidden */
-  @media all and (max-width: 1200px) {
-    #post-list {
-      padding-right: 0;
-    }
+
+}
+
+/* Pannel hidden */
+@media all and (max-width: 1200px) {
+  #post-list {
+    padding-right: 0;
   }
+}
