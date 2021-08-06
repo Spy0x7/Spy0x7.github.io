@@ -13,7 +13,7 @@ published: true
 
 Initial Port scanning using `masscan` and `nmap` :
 
-```shell
+```shel
 spy0x7:  ~/Documents/htb/laboratory
 → masscan -e tun0 -p1-65535 --rate 500 10.10.10.216 | tee masscan.ports
 
