@@ -761,50 +761,45 @@ a {
 
 /*--- Begin of Markdown table style ---*/
 
-div.post-content {
-    >table,
-    li>table {
+div.post-content .table-wrapper {
+    overflow-x: auto;
+    >table {
         min-width: 60%;
-        border-collapse: collapse;
+        overflow-x: auto;
         border-spacing: 0;
         margin-bottom: 1.5rem;
-    }
-}
-
-table {
-    thead {
-        border-bottom: solid 2px rgba(210, 215, 217, 0.75);
-        +tbody tr {
-            &:nth-child(2n) {
-                background-color: var(--tb-even-bg);
-            }
-            &:last-child:nth-child(2n) {
-                border-bottom: solid 1px var(--tb-even-border-color);
-            }
-            &:nth-child(2n + 1) {
-                background-color: var(--tb-odd-bg);
+        thead {
+            border-bottom: solid 2px rgba(210, 215, 217, 0.75);
+            th {
+                @extend %table-cell;
             }
         }
-        th {
-            @extend %table-cell;
+        tbody {
+            tr {
+                &:nth-child(2n) {
+                    background-color: var(--tb-even-bg);
+                }
+                &:nth-child(2n + 1) {
+                    background-color: var(--tb-odd-bg);
+                }
+                & {
+                    border-bottom: 1px solid var(--tb-border-color);
+                }
+                td {
+                    @extend %table-cell;
+                }
+            }
         }
     }
-    tbody td {
-        @extend %table-cell;
-    }
 }
 
-
-}
-
-}
-
-}
 
 /*--- post ---*/
+
 .pageviews .fa-spinner {
     font-size: 80%;
 }
+
 .post-meta {
     font-size: 0.85rem;
     word-spacing: 1px;
@@ -819,6 +814,7 @@ table {
         }
     }
 }
+
 .post-content {
     line-height: 1.8;
     margin-top: 2rem;
@@ -835,9 +831,11 @@ table {
         font-size: 1.08rem;
     }
 }
+
 .tag:hover {
     @extend %tag-hover;
 }
+
 .post-tag {
     display: inline-block;
     min-width: 2rem;
@@ -858,7 +856,9 @@ table {
     }
 }
 
+
 /* --- buttons --- */
+
 .btn-lang {
     border: 1px solid !important;
     padding: 1px 3px;
@@ -869,59 +869,73 @@ table {
     }
 }
 
+
 /* --- Effects classes --- */
+
 .loaded {
     display: block !important;
     @at-root .d-flex#{&} {
         display: flex !important;
     }
 }
+
 .unloaded {
     display: none !important;
 }
+
 .visable {
     visibility: visible !important;
 }
+
 .hidden {
     visibility: hidden !important;
 }
+
 .flex-grow-1 {
     -ms-flex-positive: 1!important;
     flex-grow: 1!important;
 }
+
 .btn-box-shadow {
     box-shadow: 0 0 8px 0 var(--btn-box-shadow)!important;
 }
+
 .topbar-up {
     top: -3rem !important;
     /* same as topbar height. */
 }
+
 .no-text-decoration {
     @include no-text-decoration;
 }
+
 .tooltip-inner {
     /* Overrided BS4 Tooltip */
     font-size: .7rem;
     max-width: 220px;
     text-align: left;
 }
+
 .disabled {
     color: rgb(206, 196, 196);
     pointer-events: auto;
     cursor: not-allowed;
 }
+
 .hide-border-bottom {
     border-bottom: none!important;
 }
+
 .input-focus {
     box-shadow: none;
     border-color: var(--input-focus-border-color) !important;
     background: center !important;
-    transition: background-color .15s ease-in-out,
-    border-color .15s ease-in-out;
+    transition: background-color .15s ease-in-out, border-color .15s ease-in-out;
 }
 
+
 /*--- Responsive Design ---*/
+
 @media all and (max-width: 576px) {
     $footer-height: 6rem; // overwrite
     #main>div.row:first-child>div:first-child {
@@ -969,7 +983,9 @@ table {
     }
 }
 
+
 /* Hide Sidebar and TOC */
+
 @media all and (max-width: 830px) {
     %slide {
         -webkit-transition: transform 0.4s ease;
@@ -1068,13 +1084,16 @@ table {
         }
     }
 }
+
 @media all and (min-width: 577px) and (max-width: 1199px) {
     footer>.d-flex>div {
         width: 312px;
     }
 }
 
+
 /* Sidebar visible */
+
 @media all and (min-width: 831px) {
     /* Solved jumping scrollbar */
     html {
@@ -1106,7 +1125,9 @@ table {
     }
 }
 
+
 /* iPad 9.7" horizontal */
+
 @media all and (min-width: 992px) and (max-width: 1024px) {
     #main-wrapper .col-lg-11 {
         -webkit-box-flex: 0;
@@ -1116,7 +1137,9 @@ table {
     }
 }
 
+
 /* Compact icons in sidebar & TOC hidden */
+
 @media all and (min-width: 832px) and (max-width: 1199px) {
     #sidebar {
         width: $sidebar-width-small;
@@ -1156,7 +1179,9 @@ table {
     }
 }
 
+
 /* Pannel hidden */
+
 @media all and (max-width: 1199px) {
     #panel-wrapper {
         display: none;
@@ -1171,7 +1196,9 @@ table {
     }
 }
 
+
 /*--- desktop mode, both sidebar and panel are visible ---*/
+
 @media all and (min-width: 1200px) {
     #main>div.row>div.col-xl-8 {
         -webkit-box-flex: 0;
@@ -1218,6 +1245,7 @@ table {
         width: 85%;
     }
 }
+
 @media all and (min-width: 1400px) {
     #main>div.row {
         padding-left: calc((100% - #{$main-content-max-width}) / 2);
@@ -1235,11 +1263,13 @@ table {
         right: 2.6rem;
     }
 }
+
 @media all and (min-width: 1400px) and (max-width: 1650px) {
     #topbar {
         padding-right: 2rem;
     }
 }
+
 @media all and (min-width: 1650px) {
     #breadcrumb {
         padding-left: 0;
@@ -1281,16 +1311,13 @@ table {
         .profile-text {
             margin-left: .5rem;
             /* .d-flex */
-            
             display: -webkit-box!important;
             display: -ms-flexbox!important;
             display: flex!important;
             /* .flex-wrap */
-            
             -ms-flex-wrap: wrap!important;
             flex-wrap: wrap!important;
             /* .align-content-center */
-            
             -ms-flex-line-pack: center!important;
             align-content: center!important;
             >div {
@@ -1323,7 +1350,6 @@ table {
             >span {
                 letter-spacing: 3px;
             }
-            
             >i {
                 @include icon-round(1.65rem);
                 line-height: 1rem;
@@ -1349,7 +1375,6 @@ table {
                     padding-top: .44rem;
                 }
             }
-            
             #mode-toggle-wrapper {
                 font-size: .9rem;
                 i {
@@ -1358,7 +1383,6 @@ table {
                     bottom: 0;
                 }
             }
-            
             .icon-border {
                 @include ml-mr(.2rem);
                 margin-top: .85rem;
@@ -1400,6 +1424,7 @@ table {
         right: calc(100% - 1920px + 15rem);
     }
 }
+
 @media (min-width: 1920px) {
     #main>div.row {
         padding-left: 190px;
