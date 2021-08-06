@@ -1,12 +1,14 @@
 ---
-title: Safe -- Hackthebox Writeup 
-published: true
+title: Hackthebox-Safe-Writeup 
 ayout: post
+categories: [Hackthebox, ctf]
+tags: [Hackthebox, CTF]
 date: 2021-08-2 18:54 +0600
 image: "https://raw.githubusercontent.com/Spy0x7/Spy0x7.github.io/master/assets/2020-03-19-Hackthebox_Safe/0.png"
-permalink: /Safe-Hackthebox-Writeup/
-featured: false
+toc: false
+published: true
 ---
+
 
 # [](#header-1)Safe -- Hack the Box write-up
 
