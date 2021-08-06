@@ -1,103 +1,200 @@
----
-#-------------------------------
-# General Site Settings
-title: NASUR ULLAH
-tagline: CyberSecurity bug bounty writeups.
-description: Bug Hunter And Computer Science Student.
-baseurl: "/" # The subpath of your site, e.g. /blog
-url: "http://Spy0x7.github.io" # The base hostname & protocol for your site, e.g. http://example.com
+# The Site Settings
+# v2.0
+# https://github.com/cotes2020/jekyll-theme-chirpy
+# © 2017-2019 Cotes Chung
+# MIT licensed
 
-#-------------------------------
-# Author Settings
-author:
-  name: NASUR ULLAH
-  avatar: "/images/img.png"
 
-#-------------------------------
-# Hero Settings
-hero:
-  title: NASUR ULLAH
-  description: A Young Security Researcher Who Loves to Automated Scripts.
+# jekyll-seo-tag settings › https://github.com/jekyll/jekyll-seo-tag/blob/master/docs/usage.md
+#--------------------------
 
-#-------------------------------
-# Contact Settings
-contact:
-  email: nasurullahofficial@gmail.com # Add your email for contact form
-  description: Hey! We're glad you stopped by, if you need to get in touch with me for any reason, just fill out the form below 
+title: Nasur Ullah                     # the main title
 
-# NOTE
-# Aditu theme comes with a contact form built-in. You can use this form with Formspree service and get up to 50 submissions for free. Also, you can easily switch to another service if you want.
+tagline: Penetesting, Bug Bounty, CTF player.  # it will display as the sub-title
 
-#-------------------------------
-# Footer section
-# Example of adding a new link to the footer - {icon: "ion-logo-github", link: "https://github.com"}
-# Other icons can be found at https://ionicons.com
+description: >-                        # used by seo meta and the atom feed
+  Security Blog for Penetesting Bug Bounty, CTF write-up, POC, HackTheBox, Vulnhub, tryHackMe.
+
+# Replace with the website url, e.g. 'https://username.github.io'
+url: 'https://Spy0x7.github.io'
+
+author: Nasur Ullah                  # change to your full name
+
+avatar: /assets/img/sample/avatar7.jpg  # support internet resources
+
+github:
+  username: Spy0x7             # change to your github username
+
+twitter:
+  username: Spy0x7           # change to your twitter username
+
 social:
-  - { icon: "ion-logo-twitter", link: "https://twitter.com/Spy0x7" }
-  - { icon: "ion ion-logo-github", link: "https://github.com/Spy0x71" }
+  name: Nasur Ullah                  # it will shows as the copyright owner in Footer
+  email: nusurhaxor@gmail.com             # change to your email address
+  links:
+    # The first element serves as the copyright owner's link
+    - https://twitter.com/Spy0x7     # change to your twitter homepage
+    - https://github.com/Spy0x7       # change to your github homepage
+    # Uncomment below to add more social links
+    # - https://www.facebook.com/Spy0x7
+    - https://www.linkedin.com/in/Spy0x7
 
-#-------------------------------
-# Comment Section (Disqus)
-disqus-identifier:  # Add your shortname for Disqus Comment. For example mr-brown
+google_site_verification: google_meta_tag_verification # change to your verification string
 
-#-------------------------------
-# Google Analytics
-# google-analytics: GTM-T654QLL # Add your identifier. For example UA-99631805-1.
-google:
-  tag_manager:
-    container_id: GTM-T654QLL
+#--------------------------
 
-#-------------------------------
-# Newsletter
-mailchimp: true # To enable the mailchimp form, use the value true. To turn off use the value false.
-mailchimp-identifier: blockequity.us7.list-manage.com/subscribe/post?u=a89c1803c6cd4103e90b4340c&amp;id=d2bcba6e8a # Add your MailChimp form identifier. For example - blogenjoyfreedom.us16.list-manage.com/subscribe/post?u=cd56155d76ddeeb4c0bc4d080&amp;id=7a526cd13e
 
-#-------------------------------
-# Build settings
-markdown: kramdown
-permalink: pretty
-plugins:
-  - jekyll-paginate
-  - jekyll-sitemap
-  - jekyll/tagging
-  - jekyll-seo-tag
+# Only if your site type is GitHub Project sites and doesn't have a custom domain,
+# change below value to '/projectname'.
+baseurl: '/nasur.github.io'
 
-paginate: 9
-paginate_path: "/page/:num"
+# Change to your timezone › http://www.timezoneconverter.com/cgi-bin/findzone/findzone
+timezone: Africa/Cairo
 
-# Pages Path
-defaults:
-  - scope:
-      path: "_pages"
-    values:
-      permalink: /:basename:output_ext
+google_analytics:
+  id: 'UA-167168003-1'          # Fill with your Google Analytics ID
+  pv:
+    # The Google Analytics pageviews switch.
+    # DO NOT enable it unless you know how to deploy the Google Analytics superProxy.
+    enabled: false
+    # the next options only valid when `google_analytics.pv` is enabled.
+    proxy_url: ''
+    proxy_endpoint: ''
+    cache: false  # pv data local cache, good for the users from GFW area.
 
-# Prefer color scheme setting.
+disqus:
+  comments: false  # boolean type, the global switch for posts comments.
+  shortname: ''    # Fill with your Disqus shortname. › https://help.disqus.com/en/articles/1717111-what-s-a-shortname
+
+
+# Prefer color scheme setting, available values:
 #
-# Note: Keep empty will follow the system prefer color by default,
-# and there will be a toggle to switch the theme between dark and light
-# on the bottom left of the sidebar.
-#
-# Available options:
+#     dual   - Follow the system prefer color by default, and a toggle will display
+#              in the left bottom of Sidebar, which used for switch the theme between dark and light.
 #
 #     light  - Use the light color scheme
+#
 #     dark   - Use the dark color scheme
 #
-theme_mode:   # [light|dark]
+theme_mode: dark
 
-include:
-  - _pages
+# boolean type, global switch for ToC in posts.
+toc: true
 
-# Tags
-tag_page_dir: tag
-tag_page_layout: tag_page
-tag_permalink_style: pretty
+paginate: 10
+
+markdown: kramdown
+
+highlighter: rouge
+
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  syntax_highlighter_opts: # Rouge Options › https://github.com/jneen/rouge#full-options
+    css_class: 'highlight'
+    # default_lang: console
+    span:
+      line_numbers: false
+    block:
+      line_numbers: true
+      start_line: 1
+
+# DO NOT change this unless you're a Pro user on Jekyll and Web development,
+# or you think you're smart enough to change other relevant URLs within this template.
+permalink: /posts/:title/
+
+defaults:
+  -
+    scope:
+      path: ""          # An empty string here means all files in the project
+      type: posts
+    values:
+      layout: post
+      comments: true    # Enable comments in posts.
+      toc: true         # Display TOC column in posts.
+      location: Post
+      breadcrumb:
+        -
+          label: Posts
+          url: /
+  -
+    scope:
+      path: _drafts
+    values:
+      comments: false
+  -
+    scope:
+      path: tags
+    values:
+      tab_active: Tags
+      location: Tag
+      breadcrumb:
+        -
+          label: Home
+          url: /
+        -
+          label: Tags
+          url: /tabs/tags/
+  -
+    scope:
+      path: categories
+    values:
+      tab_active: Categories
+      location: Category
+      breadcrumb:
+        -
+          label: Home
+          url: /
+        -
+          label: Categories
+          url: /tabs/categories/
+  -
+    scope:
+      path: tabs
+    values:
+      layout: page
+      dynamic_title: true    # Hide title in mobile screens.
+      breadcrumb:
+        -
+          label: Home
+          url: /
+
 
 sass:
-  sass_dir: _sass
+  sass_dir: /assets/css
   style: compressed
 
-# Twitter Schema
-twitter:
-  username: Spy0x7
-  card: summary
+compress_html:
+  clippings: all
+  comments: ["<!-- ", " -->"]
+  endings: [html, head, body, dt, dd, rt, rp,
+            optgroup, option, colgroup, caption,
+            thead, tbody, tfoot, tr, td, th]
+  profile: false
+  blanklines: false
+  ignore:
+    envs: []
+
+exclude:
+  - vendor        # Avoid Jekyll mistakenly read the vendor directory on Travis-CI's VM .
+  - Gemfile.lock
+  - Gemfile
+  - tools
+  - docs
+  - README.md
+  - LICENSE
+
+sitemap_exclude:  # Sitemap will exclude the following items.
+  fuzzy:
+    - /assets/
+  accurate:
+    - /norobots/
+    - /tabs/
+    - /categories/
+    - /tags/
+    - /posts/
+    - 404.html
+    - feed.xml
+    - sitemap.xml
+    - robots.txt
+    - redirects.json

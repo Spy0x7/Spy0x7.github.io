@@ -1,23 +1,25 @@
----   
+---
+# The 404 page
+# v2.0
+# https://github.com/cotes2020/jekyll-theme-chirpy
+# © 2017-2019 Cotes Chung
+# MIT License
 layout: page
-title: Page not found
-image: "/images/404.png"
+title: "404: Page not found"
 permalink: /404.html
+
+redirect_from:  # part of site.sitemap_exclude
+  - /norobots/
+  - /assets/
+  - /tabs/
+  - /categories/
+  - /tags/
+  - /posts/
+
+dynamic_title: true
 ---
 
-<div class="container">
-  <div class="row">
-    <div class="col col-12" style="text-align: center">
-      <h2>404</h2>
-      <p>The requested page could not be found.</p>
-      <p>
-        <a
-          href="{{site.baseurl}}/"
-          class="button button--middle"
-          style="text-decoration: none"
-          ><i class="ion ion-md-arrow-back"></i> Back to the blog</a
-        >
-      </p>
-    </div>
-  </div>
+<div class="lead">
+  <p>Sorry, we've misplaced that URL or it's pointing to something that doesn't exist. </p>
+  <p><a href="{{ site.baseurl }}/">Head back Home</a> to try finding it again, or search for it on the <a href="{{ site.baseurl }}/tabs/archives">Archives page</a>.</p>
 </div>
