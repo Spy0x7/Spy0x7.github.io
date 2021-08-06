@@ -1,10 +1,9 @@
 ---
 title: "HackTheBox — Laboratory Writeup"
 date: 2021-08-2 18:54 +0600
+tags: [HackTheBox, ASCWG, CTF]
 categories: [HackTheBox,Linux Machines]
 image: /assets/Posts/Laboratory.png
-permalink: /HackTheBox—Laboratory—Writeup/
-
 ---
 
 ### masscan

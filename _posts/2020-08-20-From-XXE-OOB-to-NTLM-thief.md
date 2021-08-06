@@ -1,10 +1,10 @@
 ---
-title: From XXE OoB to NTLM hash steal
+title: From-XXE-OoB-to-NTLM-hash-steal
 published: true
 ayout: post
 date: 2021-08-2 18:54 +0600
 image: "https://raw.githubusercontent.com/Spy0x7/Spy0x7.github.io/master/assets/2020-08-20-From-XXE-OOB-to-NTLM-thief/burp_collab.png"
-permalink: /From-XXE-OOB-to-NTLM-thief/
+tags: [HackTheBox, ASCWG, CTF]
 featured: false
 ---
 I am writing this post because of a recent chain of cool vulnerabilities I got the opportuninty to exploit during a pentest.
