@@ -8,34 +8,30 @@
 
 {% if page.layout == 'home' %}
 
-  <script src="{{ '/assets/js/home.min.js' | relative_url }}" async></script>
+<script src="{{ '/assets/js/home.min.js' | relative_url }}" async></script>
+<script data-name="BMC-Widget" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="DEDINFOSEC88" data-description="Support me on Buy me a coffee!" data-message="Like The Blog? Support Me!" data-color="#FFDD00" data-position="right"
+    data-x_margin="18" data-y_margin="18"></script>
 
 {% elsif page.layout == 'post' %}
 
-  <script src="{{ '/assets/js/post.min.js' | relative_url }}" async></script>
+<script src="{{ '/assets/js/post.min.js' | relative_url }}" async></script>
 
-  {% if page.math %}
-    <!-- MathJax -->
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
-  {% endif %}
-
-{% elsif page.layout == 'page' %}
-
-  {% if page.type == 'categories' %}
-    <script src="{{ '/assets/js/categories.min.js' | relative_url }}" async></script>
-  {% else %}
-    <script src="{{ '/assets/js/page.min.js' | relative_url }}" async></script>
-  {% endif %}
-
+{% if page.math %}
+<!-- MathJax -->
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+{% endif %} {% elsif page.layout == 'page' %} {% if page.type == 'categories' %}
+<script src="{{ '/assets/js/categories.min.js' | relative_url }}" async></script>
 {% else %}
+<script src="{{ '/assets/js/page.min.js' | relative_url }}" async></script>
+{% endif %} {% else %}
 
-  <script src="{{ '/assets/js/page.min.js' | relative_url }}" async></script>
+<script src="{{ '/assets/js/page.min.js' | relative_url }}" async></script>
 
 {% endif %}
 
 
 <!-- PWA -->
 {% if jekyll.environment == 'production' %}
-  <script src="{{ '/app.js' | relative_url }}" defer></script>
+<script src="{{ '/app.js' | relative_url }}" defer></script>
 {% endif %}
