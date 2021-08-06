@@ -1,3 +1,10 @@
+---
+title: "Bug—Bounty—Writeup"
+date: 2021-08-2 18:54 +0600
+categories: [bounty]
+tags: [bounty]
+---
+
 # Introduction
 
 My intention is to make a full and complete list of Vulnerability bounty write-up and let Bug Bounty Hunter to use this page as a reference when they want to gain some insight for a particular kind of vulnerability during Bug Hunting, feel free to submit request. Okay, enough for chit-chatting, let's get started. 
