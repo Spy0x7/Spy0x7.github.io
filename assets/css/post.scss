@@ -1,17 +1,14 @@
----
-# Post-specific style
-# v2.0
-# https://github.com/cotes2020/jekyll-theme-chirpy
-# © 2019 Cotes Chung
-# MIT License
----
+/*!
+  Post-specific style
+  v2.0
+  https://github.com/cotes2020/jekyll-theme-chirpy
+  © 2019 Cotes Chung
+  MIT License
+*/
+@import "_addon/variables";
 
-
-{% include_relative _addon/main.scss %}
-{% include_relative _addon/syntax.scss %}
-
-$prompt-older: "{{ site.data.label.post.button.previous }}";
-$prompt-newer: "{{ site.data.label.post.button.next }}";
+$prompt-older: "Older";
+$prompt-newer: "Newer";
 
 @mixin btn-sharing-color($light-color, $important: false) {
   @if $important {
@@ -27,40 +24,36 @@ $prompt-newer: "{{ site.data.label.post.button.next }}";
   border-color: var(--btn-border-color);
 }
 
-.post {
-  img {
-    max-width: 100%;
-    margin-top: .5rem;
-    margin-bottom: 1.5rem;
-    position: relative;
-    left: 50%;
-    -webkit-transform: translateX(-50%);
-    -ms-transform: translateX(-50%);
-    transform: translateX(-50%);
-  }
+.post img {
+  margin-top: .5rem;
+  margin-bottom: 1.5rem;
+  max-width: 100%;
+  height: auto;
+  // filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.08));
+  position: relative;
+  left: 50%;
+  -webkit-transform: translateX(-50%);
+  -ms-transform: translateX(-50%);
+  transform: translateX(-50%);
 }
 
 .post-tail-wrapper {
-  margin-top: 6rem;
+  margin-top: 5rem;
   border-bottom: 1px double var(--main-border-color);
   font-size: 0.85rem;
 }
 
-.post-tags {
-  line-height: 2rem;
-}
-
 .post-navigation {
   padding-top: 3rem;
-  padding-bottom: 4rem;
+  padding-bottom: 2rem;
 
   .btn {
     @include btn-post-nav;
     color: var(--link-color);
     &:hover {
-      background: #000000;
+      background: #2a408e;
       color: #fff;
-      border-color: #00FF00;
+      border-color: #2a408e;
     }
     &.disabled {
       @include btn-post-nav;
@@ -123,18 +116,19 @@ $prompt-newer: "{{ site.data.label.post.button.next }}";
 }
 
 #toc-wrapper {
-  margin-top: 7rem;
   border-left: 1px solid rgba(158, 158, 158, 0.17);
   position: -webkit-sticky;
   position: sticky;
-  top: 4rem;
+  top: 2rem;
   transition: top 0.2s ease-in-out;
   animation: fade-up .8s;
   &.topbar-down {
     top: 6rem;
   }
   >h3 {
-    @include label(inherit, 600);
+    font-size: 1rem;
+    font-family: 'Oswald', sans-serif;
+    color: gray;
   }
 }
 
@@ -149,7 +143,9 @@ $prompt-newer: "{{ site.data.label.post.button.next }}";
 
 #related-posts {
   >h3 {
-    @include label(1.1rem, 600);
+    color: gray;
+    font-size: 1.1rem;
+    font-family: 'Oswald', sans-serif;
   }
   .card {
     border: 1px solid var(--card-border-color);
@@ -159,7 +155,7 @@ $prompt-newer: "{{ site.data.label.post.button.next }}";
     -moz-transition: all .3s ease-in-out;
     transition: all .3s ease-in-out;
     h3 {
-      color: var(--text-color);
+      color: var(--label-relate-post);
     }
     &:hover {
       -webkit-transform: translate3d(0, -3px, 0);
@@ -205,9 +201,6 @@ $prompt-newer: "{{ site.data.label.post.button.next }}";
 
 #post-extend-wrapper {
   min-height: 2rem;
-  #disqus_thread {
-    margin-bottom: 2rem;
-  }
 }
 
 .post-tail-bottom a {
@@ -221,24 +214,16 @@ $prompt-newer: "{{ site.data.label.post.button.next }}";
 .share-wrapper {
   vertical-align: middle;
   user-select: none;
-  .share-icons {
+  .share-icon {
     font-size: 1.2rem;
-    a {
-      &:not(:last-child) {
-        margin-right: .25rem;
-      }
-      &:hover {
-        text-decoration: none;
-        >i {
-          @extend %btn-share-hovor;
-        }
-      }
-    }
-    >i {
-      padding-top: .35rem;
-      &:hover {
+    a:hover {
+      text-decoration: none;
+      >i {
         @extend %btn-share-hovor;
       }
+    }
+    i:hover {
+      @extend %btn-share-hovor;
     }
     .fab {
       &.fa-twitter {
@@ -255,7 +240,7 @@ $prompt-newer: "{{ site.data.label.post.button.next }}";
       }
     }
 
-  } // .share-icons
+  } // .share-icon
 
   .fas.fa-link {
     @include btn-sharing-color(rgb(171, 171, 171));
@@ -265,7 +250,7 @@ $prompt-newer: "{{ site.data.label.post.button.next }}";
 
 
 .share-label {
-  @include label(inherit, 400, inherit);
+  font-family: 'Oswald', sans-serif;
   &::after {
     content: ":";
   }
@@ -273,11 +258,8 @@ $prompt-newer: "{{ site.data.label.post.button.next }}";
 
 .license-wrapper {
   line-height: 1.2rem;
-  >a {
+  .license-text>a {
     font-weight: 600;
-    &:hover {
-      @extend %link-hover;
-    }
   }
   i {
     font-weight: 400;
@@ -290,11 +272,10 @@ $prompt-newer: "{{ site.data.label.post.button.next }}";
 
 @media all and (max-width: 576px) {
   .post-tail-bottom {
-    -ms-flex-wrap: wrap-reverse!important;
-    flex-wrap: wrap-reverse!important;
+    -ms-flex-wrap: wrap!important;
+    flex-wrap: wrap!important;
     >div:first-child {
-      width: 100%;
-      margin-top: 1rem;
+      margin-bottom: 1rem;
     }
   }
 }
@@ -349,17 +330,31 @@ $prompt-newer: "{{ site.data.label.post.button.next }}";
   }
 
 }
-.youtube-wrapper {
-  position: relative;
-  width: 800px;
-  height: 0;
-  padding-bottom: 56.25%;
+
+/*
+  The following resposive design aim to
+  make #post-extend-wrapper margin-right same as pannel's width
+*/
+@media all and (min-width: 1200px) {
+  #post-extend-wrapper {
+    margin-right: 25%;
+  }
 }
-.youtube-wrapper iframe {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
+
+@media all and (min-width: 1460px) {
+  #post-extend-wrapper {
+    margin-right: 300px;
+  }
+}
+
+@media all and (min-width: 1650px) {
+  #post-extend-wrapper {
+    margin-right: calc((100% - 1150px) / 10 + 300px);
+  }
+}
+
+@media all and (min-width: 1700px) {
+  #post-extend-wrapper {
+    margin-right: calc((100% - 1150px) / 8 + 300px);
+  }
 }
