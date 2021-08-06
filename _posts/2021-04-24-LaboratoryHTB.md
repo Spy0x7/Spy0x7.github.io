@@ -1,10 +1,12 @@
 ---
 title: "HackTheBox — Laboratory Writeup"
 date: 2021-08-2 18:54 +0600
-categories: [HackTheBox,Linux Machines]
+layout: post
+categories: [Web-CyberTalents, Medium]
+tags: [Web, CTF]
+toc: false
 image: /assets/Posts/Laboratory.png
-permalink: /HackTheBox—Laboratory—Writeup/
-
+published: true
 ---
 
 ### masscan
