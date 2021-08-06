@@ -1,3 +1,11 @@
-<p> A Young Security Researcher Who Loves to Automated Scripts. </p>
-<p>Ethical Hacker | Penetration Tester | CTF Player</p>
-<p>Contact me </p> [@Spy0x7](http://twitter.com/Spy0x7).
+---
+title: About
+
+# The About page
+# v2.0
+# https://github.com/cotes2020/jekyll-theme-chirpy
+# © 2017-2019 Cotes Chung
+# MIT License
+---
+
+> **Note**: Add Markdown syntax content to file `tabs/about.md` and it will show up on this page.
