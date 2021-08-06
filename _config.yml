@@ -10,13 +10,12 @@
 
 title: Nasur Ullah                     # the main title
 
-tagline: Penetesting, Bug Bounty, CTF player.  # it will display as the sub-title
+tagline: Ethical Hacker | Penetration Tester | CTF Player.  # it will display as the sub-title
 
 description: >-                        # used by seo meta and the atom feed
-  Security Blog for Penetesting Bug Bounty, CTF write-up, POC, HackTheBox, Vulnhub, tryHackMe.
-
+  A Young Security Researcher Who Loves to Automated Scripts, Bug Bounty, CTF write-up, POC, HackTheBox, Vulnhub, tryHackMe.
 # Replace with the website url, e.g. 'https://username.github.io'
-url: 'https://nasur.github.io'
+url: 'https://Spy0x7.github.io'
 
 author: Nasur Ullah                  # change to your full name
 
@@ -46,7 +45,7 @@ google_site_verification: google_meta_tag_verification # change to your verifica
 
 # Only if your site type is GitHub Project sites and doesn't have a custom domain,
 # change below value to '/projectname'.
-baseurl: '/nasur.github.io'
+baseurl: ''
 
 # Change to your timezone › http://www.timezoneconverter.com/cgi-bin/findzone/findzone
 timezone: Africa/Cairo
