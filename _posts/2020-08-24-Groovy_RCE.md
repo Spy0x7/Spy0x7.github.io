@@ -3,8 +3,7 @@ title: "Groovy Script — Remote Code Execution"
 date: 2021-08-2 18:54 +0600
 categories: [Cheatsheets,Scripts]
 image: /assets/Posts/groovy.jpg
-permalink: /Groovy-Script—RCE/
-
+tags: [CTF]
 ---
 
 > This cheatsheet describes various methods for executing remote code in Groovy Language to get an reverse shell.
