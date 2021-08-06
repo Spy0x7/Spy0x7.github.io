@@ -1,0 +1,23 @@
+#  The contact options.
+#  v2.3
+#  https://github.com/cotes2020/jekyll-theme-chirpy
+#  © 2020 Cotes Chung
+#  MIT Licensed
+
+-
+  type: github
+  icon: 'fab fa-github-alt'
+-
+  type: twitter
+  icon: 'fab fa-twitter'
+-
+  type: email
+  icon: 'fas fa-envelope'
+  noblank: true            # open link in current tab
+-
+  type: rss
+  icon: 'fas fa-rss'
+  noblank: true
+-
+  icon: 'fab fa-linkedin'   # icons powered by <https://fontawesome.com/>
+  url:  'https://www.linkedin.com/in/yasser-elsnbary-475383159'                  # Fill with your Linkedin homepage
