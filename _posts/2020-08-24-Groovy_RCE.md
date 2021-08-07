@@ -1,8 +1,10 @@
 ---
 title: "Groovy Script — Remote Code Execution"
+layout: encrypted
 date: 2021-08-2 18:54 +0600
 categories: [Cheatsheets,Scripts]
 image: /assets/Posts/groovy.jpg
+permalink: "encrypted.html"
 tags: [CTF]
 ---
 
