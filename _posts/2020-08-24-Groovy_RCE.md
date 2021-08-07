@@ -4,7 +4,6 @@ date: 2021-08-2 18:54 +0600
 categories: [Cheatsheets,Scripts]
 image: /assets/Posts/groovy.jpg
 layout: index_encrypted
-permalink: "/index_encrypted.html"
 tags: [CTF]
 ---
 
