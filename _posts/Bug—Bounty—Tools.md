@@ -5,50 +5,6 @@ categories: [bounty]
 tags: [bounty]
 ---
 
-## Contents
-
-- [Recon](#Recon)
-    - [Subdomain Enumeration](#Subdomain-Enumeration)
-    - [Port Scanning](#Port-Scanning)
-    - [Screenshots](#Screenshots)
-    - [Technologies](#Technologies)
-    - [Content Discovery](#Content-Discovery)
-    - [Links](#Links)
-    - [Parameters](#Parameters)
-    - [Fuzzing](#Fuzzing)
-
-- [Exploitation](#Exploitation)
-    - [Command Injection](#Command-Injection)
-    - [CORS Misconfiguration](#CORS-Misconfiguration)
-    - [CRLF Injection](#CRLF-Injection)
-    - [CSRF Injection](#CSRF-Injection)
-    - [Directory Traversal](#Directory-Traversal)
-    - [File Inclusion](#File-Inclusion)
-    - [GraphQL Injection](GraphQL-Injection)
-    - [Header Injection](#Header-Injection)
-    - [Insecure Deserialization](#Insecure-Deserialization)
-    - [Insecure Direct Object References](#Insecure-Direct-Object-References)
-    - [Open Redirect](#Open-Redirect)
-    - [Race Condition](#Race-Condition)
-    - [Request Smuggling](#Request-Smuggling)
-    - [Server Side Request Forgery](#Server-Side-Request-Forgery)
-    - [SQL Injection](#SQL-Injection)
-    - [XSS Injection](#XSS-Injection)
-    - [XXE Injection](#XXE-Injection)
-
-- [Miscellaneous](#Miscellaneous)
-    - [Passwords](#Passwords)
-    - [Secrets](#Secrets)
-    - [Git](#Git)
-    - [Buckets](#Buckets)
-    - [CMS](#CMS)
-    - [JSON Web Token](#JSON-Web-Token)
-    - [postMessage](#postMessage)
-    - [Subdomain Takeover](#Subdomain-Takeover)
-    - [Uncategorized](#Uncategorized)
-
----
-
 ## Recon
 
 Lorem ipsum dolor sit amet
