@@ -1,13 +1,10 @@
 ---
 title: "Bug—Bounty—Tools"
-date: 2021-08-7 18:54 +0600
+published: true
+ayout: post
 categories: [bounty]
 tags: [bounty]
 ---
-
-## Recon
-
-Lorem ipsum dolor sit amet
 
 ### Subdomain Enumeration
 
