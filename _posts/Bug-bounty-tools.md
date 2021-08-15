@@ -505,16 +505,3 @@ Lorem ipsum dolor sit amet
 - [httpx](https://github.com/projectdiscovery/httpx) - httpx is a fast and multi-purpose HTTP toolkit allow to run multiple probers using retryablehttp library, it is designed to maintain the result reliability with increased threads.
 
 ---
-
-## Contribute
-
-Contributions welcome! Read the [contribution guidelines](contributing.md) first.
-
----
-
-## License
-
-[![CC0](https://mirrors.creativecommons.org/presskit/buttons/88x31/svg/cc-zero.svg)](https://creativecommons.org/publicdomain/zero/1.0)
-
-To the extent possible under law, vavkamil has waived all copyright and
-related or neighboring rights to this work.
