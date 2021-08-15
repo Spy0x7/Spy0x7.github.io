@@ -2,10 +2,8 @@
 title: "Bug—Bounty—Tools"
 published: true
 ayout: post
-date: 2021-08-15 18:54 +0600
 categories: [bounty]
 tags: [bounty]
-featured: false
 ---
 
 # Awesome Bug Bounty Tools [![Awesome](https://awesome.re/badge.svg)](https://awesome.re)
