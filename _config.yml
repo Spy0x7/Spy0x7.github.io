@@ -50,12 +50,12 @@ baseurl: ''
 # Change to your timezone › http://www.timezoneconverter.com/cgi-bin/findzone/findzone
 timezone: Asia/Shanghai
 
-#google_analytics:
-  id: ''          # Fill with your Google Analytics ID
+google_analytics:
+  id: 'G-71KDH1JBGB'          # Fill with your Google Analytics ID
   pv:
     # The Google Analytics pageviews switch.
     # DO NOT enable it unless you know how to deploy the Google Analytics superProxy.
-    #enabled: true
+    enabled: true
     # the next options only valid when `google_analytics.pv` is enabled.
     proxy_url: ''
     proxy_endpoint: ''
