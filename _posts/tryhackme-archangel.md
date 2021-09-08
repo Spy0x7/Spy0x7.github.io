@@ -1,4 +1,8 @@
-TryHackMe - Archangel
+---
+title: "tryhackme-archangel—Writeup"
+categories: [tryhackme,Linux Machines]
+tags: [tryhackme, CTF]
+---
 
 ## Enumeration
 
