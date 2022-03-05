@@ -261,8 +261,11 @@ After running we see sudo 1.8.31 is vulnerable.
 
 There is a vulnerability CVE-2021-3156 seen here
 
+<<<<<<< HEAD
 There is a vulnerability CVE-2021-3156 seen here
 
+=======
+>>>>>>> 534dd6968d793572856fa8539630ade5f48b70c7
 https://github.com/mohinparamasivam/Sudo-1.8.31-Root-Exploit
 
 
