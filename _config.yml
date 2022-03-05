@@ -80,10 +80,7 @@ theme_mode: dark
 # boolean type, global switch for ToC in posts.
 toc: true
 
-collections:
-  protected: 
-    output: true
-    permalink: /protected/:path/
+
 
 paginate: 10
 
