@@ -1,11 +1,10 @@
 ---
 title: Hackthebox-routerspace-Writeup 
-published: true
 ayout: post
 image: "https://raw.githubusercontent.com/Spy0x7/Spy0x7.github.io/master/assets/routerspace/routerspace.png"
 tags: [HackTheBox, CTF]
-featured: false
 ---
+
 
 ### nmap
 
