@@ -1,7 +1,7 @@
 ---
 title: "HackTheBox—Laboratory—Writeup"
 date: 2021-08-2 18:54 +0600
-tags: [Hackthebox, CTF]
+tags: [hackthebox, CTF]
 categories: [Hackthebox,Linux Machines]
 image: /assets/Posts/Laboratory.png
 ---

@@ -2,7 +2,7 @@
 title: Hackthebox-routerspace-Writeup 
 ayout: post
 image: "https://raw.githubusercontent.com/Spy0x7/Spy0x7.github.io/master/assets/routerspace/routerspace.png"
-tags: [Hackthebox, CTF]
+tags: [hackthebox, CTF]
 ---
 
 

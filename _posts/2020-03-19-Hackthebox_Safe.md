@@ -4,7 +4,7 @@ published: true
 ayout: post
 date: 2021-08-2 18:54 +0600
 image: "https://raw.githubusercontent.com/Spy0x7/Spy0x7.github.io/master/assets/2020-03-19-Hackthebox_Safe/0.png"
-tags: [Hackthebox, CTF]
+tags: [hackthebox, CTF]
 featured: false
 ---
 
