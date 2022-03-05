@@ -81,7 +81,7 @@ theme_mode: dark
 toc: true
 
 collections:
-  protected: _posts
+  protected: 
     output: true
 
 paginate: 10
