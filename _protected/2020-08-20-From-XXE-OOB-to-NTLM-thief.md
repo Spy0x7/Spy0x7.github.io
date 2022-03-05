@@ -1,5 +1,5 @@
 ---
-title: From-XXE-OoB-to-NTLM-hash-steal
+title: testing
 published: true
 ayout: post
 date: 2021-08-2 18:54 +0600
