@@ -1459,7 +1459,5 @@ Finally!
 
 ![](../../.gitbook/assets/13-pwned.png)
 
-Thanks to [`polarbearer`](https://app.hackthebox.eu/users/159204) & [`GibParadox`](https://app.hackthebox.eu/users/125033) for... \[something interesting or useful about this machine.\]
 
-If you like this content and would like to see more, please consider [buying me a coffee](https://www.buymeacoffee.com/zweilosec)!
 
