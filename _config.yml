@@ -83,6 +83,7 @@ toc: true
 collections:
   protected: 
     output: true
+    permalink: /protected/:path/
 
 paginate: 10
 
