@@ -82,6 +82,7 @@ toc: true
 
 collections:
   protected:
+    output: true
 
 paginate: 10
 
