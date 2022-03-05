@@ -41,7 +41,7 @@ module Jekyll
             content_digest.update(to_protect.data.to_s + to_protect.content)
             content_hash = content_digest.hexdigest
 
-            protected_cache_path = File.join(Dir.pwd, '_protected-cache')
+            protected_cache_path = File.join(Dir.pwd, '_posts')
             page_cache_path = File.join(protected_cache_path, to_protect.basename_without_ext)
             hash_path = File.join(page_cache_path, 'hash')
             payload_path = File.join(page_cache_path, 'payload')
@@ -99,7 +99,7 @@ module Jekyll
                 protected_pages_names << plain_page.basename_without_ext
             end
 
-            protected_cache_path = File.join(Dir.pwd, '_protected-cache')
+            protected_cache_path = File.join(Dir.pwd, '_posts')
             Dir.foreach(protected_cache_path) do |cached_page|
                 next if cached_page == '.' or cached_page == '..'
                 if !(protected_pages_names.include? cached_page)
