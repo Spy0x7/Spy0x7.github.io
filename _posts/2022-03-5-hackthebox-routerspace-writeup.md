@@ -1,7 +1,7 @@
 ---
 title: Hackthebox-routerspace-Writeup 
 draft: true
-password: s00pers3cr3t
+key: "xsssssss"
 layout: post
 image: "https://raw.githubusercontent.com/Spy0x7/Spy0x7.github.io/master/assets/routerspace/routerspace.png"
 tags: [hackthebox, CTF]
