@@ -80,10 +80,6 @@ theme_mode: dark
 # boolean type, global switch for ToC in posts.
 toc: true
 
-<<<<<<< HEAD
-
-
-=======
 
 paginate: 10
 
