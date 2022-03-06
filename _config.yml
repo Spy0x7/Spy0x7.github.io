@@ -80,8 +80,11 @@ theme_mode: dark
 # boolean type, global switch for ToC in posts.
 toc: true
 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> parent of 72d0410 (update site)
 paginate: 10
 
 markdown: kramdown
