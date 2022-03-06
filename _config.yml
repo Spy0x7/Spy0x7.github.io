@@ -54,8 +54,6 @@ google_analytics:
   id: 'G-8F4VKC3WES'          # Fill with your Google Analytics ID
   pv:
     # The Google Analytics pageviews switch.
-    # DO NOT enable it unless you know how to deploy the Google Analytics superProxy.
-    enabled: true
     # the next options only valid when `google_analytics.pv` is enabled.
     proxy_url: ''
     proxy_endpoint: ''
