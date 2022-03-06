@@ -1,40 +1,111 @@
-require 'openssl'
 require 'base64'
 require 'digest'
-require 'bcrypt'
+require 'openssl'
+require 'fileutils'
 
-def bin2hex(str)
-  str.unpack('C*').map{ |b| "%02x" % b }.join('')
-end
+module Jekyll
+    class ProtectedPage < Page
+        def aes256_encrypt(password, cleardata)
+            digest = Digest::SHA256.new
+            digest.update(password)
+            key = digest.digest
+          
+            cipher = OpenSSL::Cipher::AES256.new(:CBC)
+            cipher.encrypt
+            cipher.key = key
+            cipher.iv = iv = cipher.random_iv
+          
+            encrypted = cipher.update(cleardata) + cipher.final
+            encoded_msg = Base64.encode64(encrypted).gsub(/\n/, '')
+            encoded_iv = Base64.encode64(iv).gsub(/\n/, '')
+          
+            hmac = Base64.encode64(OpenSSL::HMAC.digest('sha256', key, encoded_msg)).strip
+            "#{encoded_iv}|#{hmac}|#{encoded_msg}"
+        end
 
-def hex2bin(str)
-  [str].pack "H*"
-end
+        def initialize(site, base, dir, to_protect)
+            @site = site
+            @base = base
+            @dir = dir
+            @name = 'index.html'
 
-# modifies the final html page by encrypting its secure-container content
-Jekyll::Hooks.register :posts, :post_render do |post|
-  if post.data['layout'] == "secret_post"
-  	# prepare
-  	key = post.data['key']  	
-  	out = post.output
-  	page = Nokogiri::HTML(out)
-  	content = page.css('div#secure-container')[0].inner_html
+            markdown_content = to_protect.content
+            markdown_converter = site.find_converter_instance(::Jekyll::Converters::Markdown)
+            html_content = markdown_converter.convert(markdown_content)
 
-  	# encrypt
-  	aes = OpenSSL::Cipher.new('AES-256-CBC')
-  	aes.encrypt	
-  	salt = OpenSSL::Random.random_bytes(8)
-  	iv = aes.random_iv
-  	aes.key = Digest::SHA256.digest(key + bin2hex(salt))
-  	aes.iv = iv
-  	encrypted = bin2hex(aes.update(content) + aes.final).strip
-  	
-  	# save
-  	page.css('div#secure-container')[0].inner_html = encrypted
-  	post.output = page
+            self.process(@name)
+            self.read_yaml(File.join(base, '_layouts'), 'protected.html')
+            self.data['title'] = to_protect.data['title']
 
-  	# put iv and salt on page for decryption
-  	page.css('div#crypt_params')[0].inner_html = "<script>var _gj = {salt: '"+bin2hex(salt)+"',  iv: '"+bin2hex(iv)+"' } </script>"
+            content_digest = Digest::SHA1.new
+            content_digest.update(to_protect.data.to_s + to_protect.content)
+            content_hash = content_digest.hexdigest
 
-  end
+            protected_cache_path = File.join(Dir.pwd, '_protected-cache')
+            page_cache_path = File.join(protected_cache_path, to_protect.basename_without_ext)
+            hash_path = File.join(page_cache_path, 'hash')
+            payload_path = File.join(page_cache_path, 'payload')
+
+            regenerate = false
+
+            if File.exists?(hash_path) && File.exists?(payload_path)
+                cached_hash = File.read(hash_path).strip
+                cached_payload = File.read(payload_path).strip
+
+                if cached_hash == content_hash
+                    self.data['protected_content'] = cached_payload
+                else
+                    regenerate = true
+                end
+            end
+
+            if !Dir.exists?(protected_cache_path)
+                Dir.mkdir(protected_cache_path)
+            end
+
+            if !Dir.exists?(page_cache_path)
+                Dir.mkdir(page_cache_path)
+            end
+            
+            if !File.exists?(hash_path) || regenerate
+                hash_file = File.new(hash_path, "w")
+                hash_file.puts(content_hash)
+                hash_file.close
+            end
+
+            if !File.exists?(payload_path) || regenerate
+                encrypted_content = self.aes256_encrypt(to_protect.data['password'], html_content)
+                payload_file = File.new(payload_path, "w")
+                payload_file.puts(encrypted_content)
+                payload_file.close
+                self.data['protected_content'] = encrypted_content
+            end
+
+        end
+    end
+
+    class ProtectedPageGenerator < Generator
+        def generate(site)
+            dir = 'protected'
+
+            protected_pages_names = []
+
+            site.collections['protected'].docs.each do |plain_page|
+                protected_page_path = File.join(dir, plain_page.basename_without_ext)
+
+                protected_page = ProtectedPage.new(site, site.source, protected_page_path, plain_page)
+                site.pages << protected_page
+
+                protected_pages_names << plain_page.basename_without_ext
+            end
+
+            protected_cache_path = File.join(Dir.pwd, '_protected-cache')
+            Dir.foreach(protected_cache_path) do |cached_page|
+                next if cached_page == '.' or cached_page == '..'
+                if !(protected_pages_names.include? cached_page)
+                    FileUtils.rm_rf(File.join(protected_cache_path, cached_page))
+                end
+            end
+        end
+    end
 end

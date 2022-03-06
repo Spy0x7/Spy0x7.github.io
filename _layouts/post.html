@@ -1,50 +1,78 @@
----
-layout: default
----
+--- layout: default ---
 
 <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
 
-  <header class="post-header">
-    <h1 class="post-title p-name" itemprop="name headline">{{ page.title | escape }}</h1>
-    <p class="post-meta">
-      <time class="dt-published" datetime="{{ page.date | date_to_xmlschema }}" itemprop="datePublished">
+    <header class="post-header">
+        <h1 class="post-title p-name" itemprop="name headline">{{ page.title | escape }}</h1>
+        <p class="post-meta">
+            <time class="dt-published" datetime="{{ page.date | date_to_xmlschema }}" itemprop="datePublished">
         {%- assign date_format = site.minima.date_format | default: "%b %-d, %Y" -%}
         {{ page.date | date: date_format }}
-      </time>
-      {%- if page.author -%}
-        • <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span class="p-author h-card" itemprop="name">{{ page.author }}</span></span>
-      {%- endif -%}</p>
-  </header>
+      </time> {%- if page.author -%} • <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span class="p-author h-card" itemprop="name">{{ page.author }}</span></span>
+            {%- endif -%}</p>
+    </header>
 
-  <div class="post-content e-content" itemprop="articleBody">  
+    <div class="post-content e-content" itemprop="articleBody">
 
-    <div id ="secure-container" style="display: none;">
-        <div id ="0db9774b86aa5a219a0939cdd5c5aa08">
-          {{ content }}
+        <div id="secure-container" style="display: none;">
+            <div id="0db9774b86aa5a219a0939cdd5c5aa08">
+                {{ content }}
+            </div>
         </div>
+
+        <div id="content">
+            Insert password for decryption
+            <input id="password" type="password">
+            <button onclick="decrypt()">Decrypt</button>
+            <p id="errmsg" style="color: red;"></p>
+        </div>
+
+        {% include related-posts.html %} {% include post-nav.html %} {% if site.disqus.comments and page.comments %} {% include disqus.html %} {% endif %}
+
     </div>
+    <!-- #post-extend-wrapper -->
 
-    <div id="decryptor">
-      This is an active machine - please enter the password to view this content.<br/><br/>
-      <input id="key" type="text" value="">
-      <input id="decrypt" type="button" value="Decrypt">
     </div>
-  </div>
+    <!-- .col-* -->
 
-    {% include related-posts.html %}
+    </div>
+    <!-- .row -->
 
-    {% include post-nav.html %}
+    {% include lozad.html %}
 
-    {% if site.disqus.comments and page.comments %}
-      {% include disqus.html %}
-    {% endif %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.min.js" integrity="sha256-u6BamZiW5tCemje2nrteKC2KoLIKX9lKPSpvCkOhamw=" crossorigin="anonymous"></script>
+    <script>
+        function decrypt() {
+            var protectedContent = "{{ page.protected_content }}";
+            var password = document.getElementById('password').value;
 
-    </div> <!-- #post-extend-wrapper -->
+            var payload = protectedContent.split("|");
+            var iv = payload[0];
+            var hmac = payload[1];
+            var cipherText = payload[2];
 
-  </div> <!-- .col-* -->
+            var passphraseDgst = CryptoJS.SHA256(password).toString();
+            var decryptedhmac = CryptoJS.HmacSHA256(cipherText, CryptoJS.enc.Hex.parse(passphraseDgst)).toString().trim();
+            if (CryptoJS.enc.Base64.parse(hmac).toString() === decryptedhmac) {
+                var decrypted = CryptoJS.AES.decrypt({
+                        ciphertext: CryptoJS.enc.Base64.parse(cipherText)
+                    },
+                    CryptoJS.enc.Hex.parse(passphraseDgst), {
+                        iv: CryptoJS.enc.Base64.parse(iv)
+                    }
+                );
+                var content = CryptoJS.enc.Utf8.stringify(decrypted);
+                document.getElementById('content').innerHTML = content;
+            } else {
+                document.getElementById('errmsg').innerHTML = "Wrong password";
+            }
+        }
 
-</div> <!-- .row -->
-
-{% include lozad.html %}
-
-
+        var passwordInput = document.getElementById('password');
+        passwordInput.addEventListener("keyup", function(event) {
+            event.preventDefault();
+            if (event.keyCode === 13) {
+                decrypt();
+            }
+        })
+    </script>
