@@ -1,41 +1,50 @@
---- layout: default ---
+---
+layout: default
+---
 
 <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
 
-    <header class="post-header">
-        <h1 class="post-title p-name" itemprop="name headline">{{ page.title | escape }}</h1>
-        <p class="post-meta">
-            <time class="dt-published" datetime="{{ page.date | date_to_xmlschema }}" itemprop="datePublished">
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">{{ page.title | escape }}</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="{{ page.date | date_to_xmlschema }}" itemprop="datePublished">
         {%- assign date_format = site.minima.date_format | default: "%b %-d, %Y" -%}
         {{ page.date | date: date_format }}
-      </time> {%- if page.author -%} • <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span class="p-author h-card" itemprop="name">{{ page.author }}</span></span>
-            {%- endif -%}</p>
-    </header>
+      </time>
+      {%- if page.author -%}
+        • <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span class="p-author h-card" itemprop="name">{{ page.author }}</span></span>
+      {%- endif -%}</p>
+  </header>
 
-    <div class="post-content e-content" itemprop="articleBody">
+  <div class="post-content e-content" itemprop="articleBody">  
 
-        <div id="secure-container" style="display: none;">
-            <div id="0db9774b86aa5a219a0939cdd5c5aa08">
-                {{ content }}
-            </div>
+    <div id ="secure-container" style="display: none;">
+        <div id ="0db9774b86aa5a219a0939cdd5c5aa08">
+          {{ content }}
         </div>
-
-        <div id="content">
-            Insert password for decryption
-            <input id="password" type="password">
-            <button onclick="decrypt()">Decrypt</button>
-            <p id="errmsg" style="color: red;"></p>
-        </div>
-
-        {% include related-posts.html %} {% include post-nav.html %} {% if site.disqus.comments and page.comments %} {% include disqus.html %} {% endif %}
-
     </div>
-    <!-- #post-extend-wrapper -->
 
+    <div id="decryptor">
+      This is an active machine - please enter the password to view this content.<br/><br/>
+      <input id="key" type="text" value="">
+      <input id="decrypt" type="button" value="Decrypt">
     </div>
-    <!-- .col-* -->
+  </div>
 
-    </div>
-    <!-- .row -->
+    {% include related-posts.html %}
 
-    {% include lozad.html %}
+    {% include post-nav.html %}
+
+    {% if site.disqus.comments and page.comments %}
+      {% include disqus.html %}
+    {% endif %}
+
+    </div> <!-- #post-extend-wrapper -->
+
+  </div> <!-- .col-* -->
+
+</div> <!-- .row -->
+
+{% include lozad.html %}
+
+
