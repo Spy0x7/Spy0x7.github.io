@@ -21,6 +21,18 @@ layout: compress
   {% endif %}
 {% endcapture %}
 
+<head>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-8F4VKC3WES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-8F4VKC3WES');
+</script>
+</head>
+
 <html lang="{{ lang }}" {{ prefer_mode }} >
 
   {% include head.html %}
