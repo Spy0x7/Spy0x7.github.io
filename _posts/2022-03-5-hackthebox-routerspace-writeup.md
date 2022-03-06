@@ -7,7 +7,7 @@ tags: [hackthebox, CTF]
 ---
 
 
-### nmap
+## nmap
 
 ```shel
 ┌[spy0x7㉿pop-os]─[/home/spy0x7/Desktop/ctf/htb/RouterSpace]
@@ -254,7 +254,7 @@ paul@routerspace:~$ cat user.txt
 
 Get the flag
 
-Privilege escalation time :)
+## Privilege escalation
 
 First, We run a linpeas.sh script to see if there are any privilege escalation
 
