@@ -2,7 +2,6 @@
 title: Hackthebox-routerspace-Writeup 
 ayout: post
 draft: true
-key: "my_secret_key"
 layout: post
 image: "https://raw.githubusercontent.com/Spy0x7/Spy0x7.github.io/master/assets/routerspace/routerspace.png"
 tags: [hackthebox, CTF]
