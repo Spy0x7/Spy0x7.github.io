@@ -553,4 +553,5 @@ Advanced Threat Protection and Advanced Threat Analytics](https://www.blackhat.c
 * [Active Directory Domain Security Technical Implementation Guide (STIG)](https://www.stigviewer.com/stig/active_directory_domain/)
 * [Active Directory Security Testing Guide - v2.0](https://www.slideshare.net/HuyKha2/adstg-v20-guidance)
 
-
+## Credit to
+https://github.com/geeksniper/active-directory-pentest
