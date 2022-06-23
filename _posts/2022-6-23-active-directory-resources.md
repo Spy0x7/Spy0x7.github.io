@@ -554,4 +554,4 @@ Advanced Threat Protection and Advanced Threat Analytics](https://www.blackhat.c
 * [Active Directory Security Testing Guide - v2.0](https://www.slideshare.net/HuyKha2/adstg-v20-guidance)
 
 ## Credit to
-* [active-directory-pentest](https://github.com/geeksniper/active-directory-pentest)
+* [geeksniper](https://github.com/geeksniper/active-directory-pentest)
