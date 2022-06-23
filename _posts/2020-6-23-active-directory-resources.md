@@ -1,6 +1,4 @@
-# active-directory-resources
-
----
+--
 title: active-directory-resources
 published: true
 ayout: post
