@@ -1,5 +1,14 @@
 # active-directory-resources
 
+---
+title: active-directory-resources
+published: true
+ayout: post
+date: 2020-6-23 12:54 +0600
+featured: false
+---
+
+
 ## Table of Contents
 * [Discovery](#discovery)
 * [Privilege Escalation](#privilege-escalation)
