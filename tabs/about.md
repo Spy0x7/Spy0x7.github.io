@@ -1,2 +1,3 @@
-<center><p> A Young Security Researcher Who Loves to Automated Scripts. </p></center>
-<center><p>Ethical Hacker | Penetration Tester | CTF Player</p></center>
+<center><p> ```
+I'm an Ethical Hacker and Penetration Tester, SRT member, and active participant on Yogosha. With a knack for CTF challenges and holding the CNSP certification
+``` </p></center>
