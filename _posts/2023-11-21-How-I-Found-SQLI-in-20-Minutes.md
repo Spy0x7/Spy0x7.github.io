@@ -1,5 +1,5 @@
 ---
-title: "How I Found SQLI on a Dutch Government Website in 20 Minutes"
+title: "How I Found SQLI on Dutch Government Website in 20 Minutes"
 published: true
 ayout: post
 categories: [bounty]
