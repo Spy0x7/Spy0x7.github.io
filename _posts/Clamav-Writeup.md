@@ -1,5 +1,5 @@
 ---
-title: Easylfi
+title: Easylfix
 published: true
 ayout: post
 date: 2022-10-15 18:54 +0600
