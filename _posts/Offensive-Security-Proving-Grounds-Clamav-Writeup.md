@@ -2,7 +2,7 @@
 title: "Offensive-Security–Proving-Grounds–ClamAV-Write-up"
 published: true
 ayout: post
-date: 2024-10-28 18:54 +0600
+date: 2024-10-27 18:54 +0600
 categories: [OSCP]
 tags: [ctf,oscp] 
 ---
