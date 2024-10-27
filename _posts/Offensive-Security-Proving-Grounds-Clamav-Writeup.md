@@ -1,10 +1,10 @@
 ---
-title: Offensive-Security–Proving-Grounds–ClamAV-Write-up
+title: Easyxlfi
 published: true
 ayout: post
-date: 2024-10-27 18:54 +0600
-categories: [OSCP]
-tags: [ctf,oscp] 
+date: 2022-10-15 18:54 +0600
+tags: [CTF]
+featured: false
 ---
 
 # Machine Type: Linux
