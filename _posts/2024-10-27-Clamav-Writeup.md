@@ -64,7 +64,7 @@ Nmap done: 1 IP address (1 host up) scanned in 64.02 seconds
 
 
 **Run Nmap Scan**: 
-Use Nmap to discover open services on the target. The following services are detected: - **SSH** - **HTTP** - **SMTP** - **SMB** ```
+Use Nmap to discover open services on the target. The following services are detected: - **SSH** - **HTTP** - **SMTP** - **SMB**
 
 
 **No Accessible SMB Shares**: After checking for accessible shares, none were found on the SMB service.
