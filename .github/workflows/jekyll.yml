@@ -30,13 +30,10 @@ jobs:
         uses: actions/configure-pages@v3
 
       - name: Build with Jekyll
-        run: bundle exec jekyll build
+        run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
 
-      - name: Upload artifact manually
-        uses: actions/upload-artifact@v3
-        with:
-          name: github-pages
-          path: ./_site
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
 
   deploy:
     environment:
