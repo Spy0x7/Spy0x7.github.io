@@ -50,10 +50,10 @@ layout: default
         </div>
         {% endif %}
 
-        <!-- Counter.dev page views -->
+        <!-- GoatCounter page views -->
         <div class="post-meta-item mt-1">
           <i class="far fa-eye fa-fw"></i> 
-          <span data-counter>0</span> views
+          <span id="page-views">Loading...</span> views
         </div>
 
       </div> <!-- .post-meta -->
@@ -140,26 +140,28 @@ layout: default
 
 {% include lozad.html %}
 
-<!-- Counter.dev API fetch script -->
+<!-- GoatCounter API fetch script -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
   const path = window.location.pathname;
-  fetch('https://api.counter.dev/spy0x7.github.io' + path)
-    .then(response => response.json())
-    .then(data => {
-      const counterElement = document.querySelector('[data-counter]');
-      if (counterElement && data.views !== undefined) {
-        counterElement.textContent = data.views;
-      } else if (counterElement) {
-        counterElement.textContent = "0";
-      }
-    })
-    .catch(error => {
-      console.error('Counter.dev API error:', error);
-      const counterElement = document.querySelector('[data-counter]');
-      if (counterElement) {
-        counterElement.textContent = "0";
-      }
+  try {
+    const res = await fetch('https://spy0x7.goatcounter.com/api/v0/stats/pageviews', {
+      headers: { 'Accept': 'application/json' }
     });
+    const data = await res.json();
+    const page = data?.pageviews?.find(p => p.path === path);
+    const counterElement = document.getElementById('page-views');
+    if (page) {
+      counterElement.textContent = page.count;
+    } else {
+      counterElement.textContent = "0";
+    }
+  } catch (error) {
+    console.error('GoatCounter API error:', error);
+    const counterElement = document.getElementById('page-views');
+    if (counterElement) {
+      counterElement.textContent = "?";
+    }
+  }
 });
 </script>
