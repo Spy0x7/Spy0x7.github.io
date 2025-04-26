@@ -71,13 +71,12 @@ layout: page
   <!-- page views -->
   {% if site.busuanzi.enabled %}
   <i class="far fa-eye fa-fw ml-2"></i>
-<span class="busuanzi_container_page_pv" data-path="{{ post.url | relative_url }}">
-  <span class="busuanzi_value_page_pv">0</span> views
-</span>
-
-
+  <span class="busuanzi_container_page_pv">
+    <span class="busuanzi_value_page_pv" data-path="{{ post.url | relative_url }}">0</span> views
+  </span>
   {% endif %}
 </div>
+
 
 
   </div> <!-- .post-review -->
