@@ -50,13 +50,11 @@ layout: default
         </div>
         {% endif %}
 
-        <!-- page views -->
-        {% if site.busuanzi.enabled %}
-        <div>
-          <i class="far fa-eye fa-fw"></i>
-          <span id="busuanzi_value_page_pv">0</span> views
+        <!-- Counter.dev page views -->
+        <div class="post-meta-item mt-1">
+          <i class="far fa-eye fa-fw"></i> 
+          <span data-counter></span> views
         </div>
-        {% endif %}
 
       </div> <!-- .post-meta -->
 
@@ -64,7 +62,6 @@ layout: default
         {% if page.image %}
           <img src="{{ page.image }}">
         {% endif %}
-        <!-- Using lozad. See: <https://github.com/ApoorvSaxena/lozad.js#usage> -->
         {% if content contains '<img src=' %}
           {{ content | replace: '<img src=', '<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src=' }}
         {% else %}
@@ -95,7 +92,7 @@ layout: default
             {{- tag -}}
           </a>
           {% endfor %}
-          </div>
+        </div>
         {% endif %}
 
         <div class="post-tail-bottom

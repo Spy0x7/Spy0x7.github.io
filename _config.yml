@@ -60,8 +60,8 @@ google_analytics:
     proxy_endpoint: ''
     cache: false  # pv data local cache, good for the users from GFW area.
 
-busuanzi:
-  enabled: true
+#busuanzi:
+#  enabled: false
 
 
 
