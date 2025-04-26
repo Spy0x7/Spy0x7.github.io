@@ -53,7 +53,7 @@ layout: default
         <!-- Counter.dev page views -->
         <div class="post-meta-item mt-1">
           <i class="far fa-eye fa-fw"></i> 
-          <span data-counter></span> views
+          <span data-counter>0</span> views
         </div>
 
       </div> <!-- .post-meta -->
@@ -139,3 +139,27 @@ layout: default
 </div> <!-- .row -->
 
 {% include lozad.html %}
+
+<!-- Counter.dev API fetch script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const path = window.location.pathname;
+  fetch('https://api.counter.dev/spy0x7.github.io' + path)
+    .then(response => response.json())
+    .then(data => {
+      const counterElement = document.querySelector('[data-counter]');
+      if (counterElement && data.views !== undefined) {
+        counterElement.textContent = data.views;
+      } else if (counterElement) {
+        counterElement.textContent = "0";
+      }
+    })
+    .catch(error => {
+      console.error('Counter.dev API error:', error);
+      const counterElement = document.querySelector('[data-counter]');
+      if (counterElement) {
+        counterElement.textContent = "0";
+      }
+    });
+});
+</script>
