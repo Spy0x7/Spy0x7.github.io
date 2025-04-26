@@ -61,7 +61,7 @@ google_analytics:
     cache: false  # pv data local cache, good for the users from GFW area.
 
 busuanzi:
-  enabled: true
+  enabled: false
 
 
 disqus:
