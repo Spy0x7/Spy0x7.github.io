@@ -1,10 +1,9 @@
-
 ---
-title: "Chaining OData Filter Injection & SSRF-Like Behavior to Enumerate Users and Access Internal Services"
+title: "OData_+_SSRF_Fun_Filter_Injection_via_File_Upload"
 published: true
 layout: post
 categories: [bounty]
-tags: [bounty, OData, injection, SSRF, enumeration, security]
+tags: [bounty, OData, injection, SSRF, IDOR, enumeration]
 ---
 
 ## Introduction
@@ -159,3 +158,4 @@ This was one of those bugs where nothing “crashed,” but everything leaked. I
 Thanks for reading! More write-ups coming soon, inshaAllah.
 
 Stay curious & hack ethically 💻
+
