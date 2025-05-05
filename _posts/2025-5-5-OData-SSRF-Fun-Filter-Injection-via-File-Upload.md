@@ -14,7 +14,7 @@ This write-up explains two interesting behaviors I encountered during a black-bo
 
 ---
 
-## 🧠 What is OData?
+## What is OData?
 
 **OData (Open Data Protocol)** is a REST-based protocol developed by Microsoft that enables querying and manipulating data using simple HTTP requests. It’s like SQL for APIs. If you’ve seen URLs with `$filter`, `$select`, or `$expand`, chances are you’re looking at an OData-based endpoint.
 
@@ -33,7 +33,7 @@ OData supports a wide range of functions like `eq`, `startswith`, `endswith`, `s
 
 ---
 
-## 🔎 Discovery Phase
+## Discovery Phase
 
 While testing the **“Name Screening”** upload feature, I spotted a special header:
 
@@ -45,7 +45,7 @@ That `$filter` keyword gave away that this backend uses **OData**. So I did what
 
 ---
 
-## 💥 Bug 1: OData Filter Injection
+## Bug 1: OData Filter Injection
 
 ### What Is It?
 
@@ -88,7 +88,7 @@ If a server does not validate **functions, logic, or selected fields**, attacker
 
 ---
 
-## 🧪 Bug 2: SSRF-Like Behavior via Proxy Header
+## Bug 2: SSRF-Like Behavior via Proxy Header
 
 ### What Is SSRF?
 
@@ -113,7 +113,7 @@ Next, I used **Burp Collaborator**:
 X-Proxy-Destination: http://<my-collab>.oastify.com
 ```
 
-A few seconds later  boom 💥  a DNS callback was triggered from the backend. That proved the server could make **arbitrary outbound HTTP requests**, and I could potentially:
+A few seconds latera DNS callback was triggered from the backend. That proved the server could make **arbitrary outbound HTTP requests**, and I could potentially:
 
 - Scan internal IP ranges
 - Hit cloud metadata like `169.254.169.254`
@@ -127,7 +127,7 @@ This behavior is not full SSRF exploitation, but it’s **functionally similar**
 
 ---
 
-## 🔒 Why This Matters
+## Why This Matters
 
 These two bugs are **low-hanging but high-impact**:
 
@@ -138,7 +138,7 @@ Together, they expose internal logic and increase the attacker’s surface area.
 
 ---
 
-## 🧼 What Could Fix This?
+## What Could Fix This?
 
 - Strict validation of all `$filter` expressions (no logic operators, no wildcards)
 - Block `X-Proxy-*` headers from being user-controlled
@@ -147,7 +147,7 @@ Together, they expose internal logic and increase the attacker’s surface area.
 
 ---
 
-## 📌 Final Thoughts
+## Final Thoughts
 
 This was one of those bugs where nothing “crashed,” but everything leaked. It’s a good reminder that:
 
@@ -157,5 +157,5 @@ This was one of those bugs where nothing “crashed,” but everything leaked. I
 
 Thanks for reading! More write-ups coming soon, inshaAllah.
 
-Stay curious & hack ethically 💻
+Stay curious & hack ethically
 
