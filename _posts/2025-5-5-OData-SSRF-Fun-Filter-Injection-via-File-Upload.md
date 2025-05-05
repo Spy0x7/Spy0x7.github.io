@@ -1,5 +1,5 @@
 ---
-title: "OData + SSRF = Fun: Filter Injection via File Upload"
+title: "OData_+_SSRF_Fun_Filter_Injection_via_File_Upload"
 published: true
 layout: post
 categories: [bounty]
