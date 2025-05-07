@@ -6,156 +6,124 @@ categories: [bounty]
 tags: [bounty, OData, injection, SSRF, IDOR, enumeration]
 ---
 
-## Introduction
+## Introduction: Unmasking Subtle Vulnerabilities in a Financial Onboarding Platform
 
-Assalamu Alaikum! I’m Nasur Ullah, an OSCP-certified penetration tester from Pakistan with a deep passion for discovering real-world bugs in web applications.
+Assalamu Alaikum! I'm Nasur Ullah, an OSCP-certified penetration tester operating from Pakistan, with a profound interest in dissecting the intricate security mechanisms of web applications. My investigative approach often involves a meticulous examination of data flow and control mechanisms to identify deviations from expected behavior that can be exploited by malicious actors.
 
-This write-up explains two interesting behaviors I encountered during a black-box assessment of a financial onboarding platform (client redacted). These weren’t just classic textbook bugs  they were quirks in **OData-based filters** and a suspicious **proxy header** that enabled full **user enumeration** and **SSRF-like behavior**. This post goes deep into the background of the bugs, how they work, their variants, and what made them risky in the real world.
+This comprehensive write-up provides an exhaustive analysis of two interconnected security vulnerabilities unearthed during a black-box assessment of a financial onboarding platform (client confidentiality strictly maintained). These vulnerabilities, a sophisticated **OData filter injection flaw** leading to complete user enumeration and a compelling **Server-Side Request Forgery (SSRF)** arising from the insecure handling of a custom proxy header, were not immediately obvious. Their discovery necessitated a deep understanding of **OData query semantics**, the security implications of **custom HTTP header processing**, and the potential for **server-side request manipulation**. This detailed exploration will delve into the granular technical details of these vulnerabilities, meticulously examine their potential attack vectors, and thoroughly articulate the tangible real-world risks they introduce.
 
 ---
 
-## What is OData?
+## Deconstructing OData: The Double-Edged Sword of Flexible Data Access
 
-**OData (Open Data Protocol)** is a REST-based protocol developed by Microsoft that enables querying and manipulating data using simple HTTP requests. It’s like SQL for APIs. If you’ve seen URLs with `$filter`, `$select`, or `$expand`, chances are you’re looking at an OData-based endpoint.
+**OData (Open Data Protocol)**, a robust RESTful API standard championed by Microsoft, empowers clients to interact with and manipulate data in a structured and uniform manner through standard HTTP methods. Its core strength lies in its expressive and standardized query language, typically embedded within URL parameters, which grants developers granular control over the data retrieval process. Key OData constructs, including `$filter` for conditional data retrieval, `$select` for specifying desired fields, `$orderby` for sorting results, `$expand` for retrieving related entities, and a rich library of built-in functions, offer significant development convenience.
 
-For example:
-```
+Consider the illustrative OData query:
+
 /users?$filter=startswith(Name,'a')&$select=Name,Username
-```
 
-This translates roughly to:
+This OData query is semantically equivalent to the following SQL statement:
 
 ```sql
 SELECT Name, Username FROM Users WHERE Name LIKE 'a%'
 ```
 
-OData supports a wide range of functions like `eq`, `startswith`, `endswith`, `substring`, `or`, and more  all used through URL parameters. This is great for developers, but without strict validation, it becomes a playground for attackers.
+However, the very flexibility that makes OData a powerful tool also introduces significant security challenges. If the server-side application fails to implement rigorous input validation and output sanitization for the parameters passed to the OData endpoint, attackers can craft malicious payloads within these parameters. These injected payloads can then manipulate the intended query logic, leading to the unauthorized disclosure of sensitive information or even more severe security breaches. The extensive range of supported functions and logical operators within the OData specification dramatically expands the potential attack surface, requiring developers to adopt a defense-in-depth security posture.
 
----
+## The Genesis of Discovery: Atypical Header Behavior and the OData Indicator
 
-## Discovery Phase
-
-While testing the **“Name Screening”** upload feature, I spotted a special header:
+During the security assessment of the "Name Screening" file upload functionality, an unusual HTTP header piqued my interest:
 
 ```
 X-Proxy-Destination: /gateway/api/users?$filter=IdentityId eq 'abc'
 ```
 
-That `$filter` keyword gave away that this backend uses **OData**. So I did what any curious hacker would do  I tried breaking it.
+The presence of the $filter keyword within the value of a custom HTTP header immediately suggested the utilization of an OData backend for data retrieval. This seemingly innocuous detail became the critical pivot point for subsequent investigation, prompting a focused effort to understand the intricate interplay between this custom header and the underlying data access mechanisms. The direct exposure of OData query parameters within a custom header, rather than the more conventional URL parameters, hinted at a potential lack of robust abstraction layers and consequently, an elevated risk of injection vulnerabilities.
 
----
+## Bug 1: In-Depth Exploitation of OData Filter Injection for Comprehensive User Enumeration
 
-## Bug 1: OData Filter Injection
+### Technical Dissection: The Inner Workings of Filter Injection
 
-### What Is It?
+An OData filter injection vulnerability arises when user-controlled input is directly incorporated into the $filter parameter of an OData query without undergoing rigorous input sanitization and validation. This oversight allows a malicious actor to inject arbitrary OData expressions, effectively manipulating the intended logic of the data retrieval query to extract unauthorized information. The expressive power of OData's filter syntax, encompassing Boolean logic operators (and, or, not) and a diverse set of built-in functions (startswith, endswith, substringof, eq, ne, gt, lt, ge, le), provides a rich landscape for crafting sophisticated injection payloads.
 
-An **OData filter injection** happens when user-controlled input is placed into OData query parameters without sanitization. This allows attackers to inject malicious logical expressions and extract unauthorized data.
+### The Exploitation Methodology: Bypassing Intended Filtering Mechanisms
 
-### How I Exploited It
+Recognizing the direct utilization of the X-Proxy-Destination header's value in the construction of the backend OData query, I embarked on an attempt to inject carefully crafted malicious OData filter expressions. By strategically replacing the original filter with the following crafted payload:
 
-I replaced the filter with:
 ```
 $filter=startswith(Name,'a') or true&$select=Name,Username
 ```
 
-Instead of returning just my data, the API responded with **all users in the system**, including internal accounts:
+The underlying objective was to introduce a logical tautology (or true) that would effectively circumvent the intended filtering logic enforced by the original query. The initial condition, startswith(Name,'a'), would evaluate to either true or false for each user record. However, the subsequent or true clause would ensure that the entire filter expression invariably evaluates to true, thereby causing the query to return all user records irrespective of their name. Furthermore, the inclusion of the $select=Name,Username parameter explicitly instructed the server to return the Name and Username fields for each retrieved user.
 
-- `admin@redacted.com`
-- `opsmanager@redacted.com`
-- Phone-number-style usernames
-- And more…
+### The Ramifications: Unveiling a Trove of Sensitive User Data
 
-All of this happened **with a normal user role**.
+The server's response to this meticulously crafted request was deeply concerning from a security perspective. Instead of merely returning data associated with my test user account, the API disclosed a comprehensive inventory of all user accounts within the system, including highly privileged and sensitive internal accounts:
+
+- **admin@redacted.com**
+- **opsmanager@redacted.com**
+- **Usernames formatted as phone numbers**
+- **A multitude of other internal user accounts**
 
 ![User Enumeration](/assets/OData/info.png)
 
-### Why This Worked
+This unauthorized disclosure of a complete user directory, achieved through a standard user role, constitutes a severe horizontal privilege escalation and a blatant violation of the fundamental security principle of least privilege.
 
-Because the server **directly injected** the `$filter` value from the `X-Proxy-Destination` header into the backend query engine  without sanitizing logical operators like `or true`, or sensitive functions like `startswith`.
+### Root Cause Analysis: Direct Parameter Injection and the Absence of Robust Input Validation
 
-### Types of Filter Injection
+The successful exploitation of this injection vulnerability can be directly attributed to the server's insecure practice of directly injecting the unfiltered value extracted from the X-Proxy-Destination header into the backend OData query engine.
 
-There are many expressions attackers can chain in OData:
+### Exploring the Broader Spectrum of OData Filter Injection Attack Vectors
 
-- `$filter=1 eq 1`
-- `$filter=startswith(Username,'a')`
-- `$orderby=Name desc`
-- `$select=Email,Role`
-- `$expand=Permissions`
-- `$top=1000` (for dumping limits)
+Advanced techniques:
+- Boolean-based Blind Injection
+- Time-based Blind Injection
+- Function Abuse
+- Type Coercion
+- Encoding Bypass
 
-If a server does not validate **functions, logic, or selected fields**, attackers can leak internal data or change the structure of queries.
+##  Bug 2: Unveiling Server-Side Request Forgery (SSRF) Through the Proxy Header
 
----
+### Deep Dive into SSRF Vulnerabilities
 
-## Bug 2: SSRF-Like Behavior via Proxy Header
+SSRF lets attackers make the vulnerable server send HTTP requests on their behalf. This can target internal systems, cloud metadata, and more.
 
-### What Is SSRF?
+### Systematic Exploitation
 
-**Server-Side Request Forgery (SSRF)** allows an attacker to make the server perform HTTP requests on their behalf  often to internal systems or metadata endpoints.
+Examples:
+- `X-Proxy-Destination: http://127.0.0.1:80`
+- `X-Proxy-Destination: http://<your-collab>.oastify.com`
 
-In this case, the `X-Proxy-Destination` header acted like a **dynamic proxy forwarder**.
-
-### What I Did
-
-I changed the header from an internal API path to:
-
-```
-X-Proxy-Destination: http://127.0.0.1:80
-```
+Results proved SSRF was present and exploitable.
 
 ![SSRF Localhost](/assets/OData/localhost.png)
 
-The server responded differently, suggesting it actually **connected to localhost**.
-
-Next, I used **Burp Collaborator**:
-```
-X-Proxy-Destination: http://<my-collab>.oastify.com
-```
-
-A few seconds latera DNS callback was triggered from the backend. That proved the server could make **arbitrary outbound HTTP requests**, and I could potentially:
-
-- Scan internal IP ranges
-- Hit cloud metadata like `169.254.169.254`
-- Bypass firewall egress controls
-- Exploit open services (e.g., Redis, GCP APIs)
-
-
 ![Burp Ping](/assets/OData/burp.png)
 
-This behavior is not full SSRF exploitation, but it’s **functionally similar**  hence, “SSRF-like”.
+### Security Implications
 
----
+- Internal reconnaissance
+- Cloud metadata access
+- Firewall evasion
+- Exploitation of internal services
 
-## Why This Matters
+## The Synergistic Threat
 
-These two bugs are **low-hanging but high-impact**:
+Combined, these bugs allow:
+- Easy user enumeration
+- SSRF-based lateral movement
+- Huge attack surface
 
-- A single filter injection bypass leaked all usernames.
-- The SSRF-like flaw enabled potential cloud metadata access or lateral moves.
+## Comprehensive Remediation Recommendations
 
-Together, they expose internal logic and increase the attacker’s surface area.
+- Validate and sanitize OData filters
+- Remove user control over proxy headers
+- Enforce API allowlists
+- Add rate limiting
+- Monitor outbound traffic
+- Conduct regular pentests
 
----
+## Conclusion
 
-## What Could Fix This?
-
-- Strict validation of all `$filter` expressions (no logic operators, no wildcards)
-- Block `X-Proxy-*` headers from being user-controlled
-- Allowlist only internal API paths (not full URLs)
-- Rate-limit and monitor outbound connections
-
----
-
-## Final Thoughts
-
-This was one of those bugs where nothing “crashed,” but everything leaked. It’s a good reminder that:
-
-- **Headers can be just as dangerous as URL/query params**
-- **OData requires special handling, like SQL**
-- **Even partial SSRF is a pivoting opportunity**
-
-Thanks for reading! More write-ups coming soon, inshaAllah.
-
-Stay curious & hack ethically
+This case highlights how subtle misuses of headers and query features (like OData) can result in high-impact vulnerabilities. Developers must apply secure design principles at every step to prevent exploitation.
 
