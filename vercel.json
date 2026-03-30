@@ -1,4 +1,36 @@
 {
+    "redirects": [
+        {
+            "source": "/blog/HackTheBox%E2%80%94Cache%E2%80%94Writeup",
+            "destination": "/blog/hackthebox-cache-writeup",
+            "statusCode": 301
+        },
+        {
+            "source": "/blog/HackTheBox%E2%80%94Omni%E2%80%94Writeup",
+            "destination": "/blog/hackthebox-omni-writeup",
+            "statusCode": 301
+        },
+        {
+            "source": "/blog/Hackthebox%E2%80%94Seal%E2%80%94Writeup",
+            "destination": "/blog/hackthebox-seal-writeup",
+            "statusCode": 301
+        },
+        {
+            "source": "/blog/Easylfi",
+            "destination": "/blog/easylfi",
+            "statusCode": 301
+        },
+        {
+            "source": "/blog/Proving-Grounds-ClamAV",
+            "destination": "/blog/proving-grounds-clamav",
+            "statusCode": 301
+        },
+        {
+            "source": "/blog/Groovy-Script%E2%80%94Remote-Code-Execution",
+            "destination": "/blog/groovy-script-remote-code-execution",
+            "statusCode": 301
+        }
+    ],
     "headers": [
         {
             "source": "/(.*)",

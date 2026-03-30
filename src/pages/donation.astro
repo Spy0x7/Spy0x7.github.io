@@ -34,15 +34,29 @@ while (true) {
             },
         }
     );
-    const supporters: Supporter = await response.json();
 
-    if (supporters.data.length !== 5) {
+    if (!response.ok) {
+        console.error('❌ Failed to fetch supporters:', await response.text());
+        break;
+    }
+
+    let supporters: Supporter | null = null;
+
+    try {
+        supporters = await response.json();
+    } catch (err) {
+        console.error('❌ Failed to parse JSON:', err);
+        break;
+    }
+
+    if (!supporters?.data || supporters.data.length === 0) {
         break;
     }
 
     allSupporters = allSupporters.concat(supporters.data);
     page++;
 }
+
 ---
 
 <MainLayout
@@ -60,11 +74,7 @@ while (true) {
         </h1>
         <div class='mb-8'>
             <p class='text-gray-600 dark:text-gray-400 mb-4'>
-                I am currently preparing to buy pwk-oscp , and I am facing many
-                problems collecting money for it. If you liked my work , my
-                blog/writeups and you want to help a student. You can just
-                donate to me. You can donate to me on Buymeacoffee. Thank you in
-                Advance
+                Hey 👋 I Please Support Me To Get OSWE Please./
             </p>
             <BuyMeACoffeeSvg />
         </div>

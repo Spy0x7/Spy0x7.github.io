@@ -5,35 +5,32 @@ export default function GiscusComment() {
     const [theme, setTheme] = useState<boolean | string>(false);
 
     useEffect(() => {
-        if (window.location !== undefined) {
-            const theme =
-                document.documentElement.attributes.getNamedItem(
-                    'data-theme'
-                )?.value;
-            if (theme) {
-                setTheme(theme);
+        if (typeof window !== 'undefined') {
+            const detectedTheme = document.documentElement
+                .getAttribute('data-theme');
+            if (detectedTheme) {
+                setTheme(detectedTheme);
             }
         }
-    }, [theme]);
+    }, []);
+
     return theme ? (
         <div className='mt-12 border-t pt-6 border-gray-200 dark:border-gray-800 w-full'>
             <Giscus
                 id='comments'
-                repo='DEDSEC-MAX/website-comments'
-                repoId='R_kgDOGZa4PA'
+                repo='Spy0x7/spy0x7-comments'
+                repoId='R_kgDOOrf8Qw'
                 category='General'
-                categoryId='DIC_kwDOGZa4PM4CSgid'
-                mapping='url'
-                term='Welcome to 0xDedinfosec comment!'
+                categoryId='DIC_kwDOOrf8Q84CqQFv'
+                mapping='pathname'
+                strict='0'
                 reactionsEnabled='1'
                 emitMetadata='0'
-                inputPosition='top'
+                inputPosition='bottom'
                 theme={theme === 'dark' ? 'dark' : 'light'}
                 lang='en'
                 loading='lazy'
             />
         </div>
-    ) : (
-        <></>
-    );
+    ) : null;
 }

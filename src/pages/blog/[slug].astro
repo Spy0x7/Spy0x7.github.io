@@ -25,6 +25,31 @@ const { Content } = await blog.render();
     description={blog.data.description}
     ogImage={Astro.site + 'images/hackthebox/' + blog.data.image}
 >
+    <script
+        type="application/ld+json"
+        set:html={JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'BlogPosting',
+            headline: blog.data.title,
+            description: blog.data.description,
+            image: Astro.site + 'images/hackthebox/' + blog.data.image,
+            datePublished: blog.data.date.toISOString(),
+            author: {
+                '@type': 'Person',
+                name: 'Nasur Ullah',
+                url: 'https://spy0x7.vercel.app',
+            },
+            publisher: {
+                '@type': 'Person',
+                name: 'Nasur Ullah',
+            },
+            url: `https://spy0x7.vercel.app/blog/${blog.slug}`,
+            mainEntityOfPage: {
+                '@type': 'WebPage',
+                '@id': `https://spy0x7.vercel.app/blog/${blog.slug}`,
+            },
+        })}
+    />
     <article
         class='flex flex-col items-start justify-center w-full max-w-2xl mx-auto mb-16'
     >
@@ -41,11 +66,11 @@ const { Content } = await blog.render();
                 <Picture
                     src={Avatar}
                     class='rounded-full h-6 w-6'
-                    alt='Dedsec'
+                    alt='Spy0x7'
                     formats={['avif', 'webp']}
                 />
                 <p class='ml-2 text-sm text-gray-700 dark:text-gray-300'>
-                    {'Dedsec / '}
+                    {'Spy0x7 / '}
                     {
                         format(
                             parseISO(blog.data.date.toISOString()),
@@ -76,7 +101,7 @@ const { Content } = await blog.render();
         <div class='text-sm text-gray-700 dark:text-gray-300'>
             <a
                 href={`https://mobile.twitter.com/search?q=${encodeURIComponent(
-                    `https://0xdedinfosec.vercel.app/blog/${blog.slug}`
+                    `https://spy0x7.vercel.app/blog/${blog.slug}`
                 )}`}
                 target='_blank'
                 rel='noopener noreferrer'
@@ -85,7 +110,7 @@ const { Content } = await blog.render();
             </a>
             {` • `}
             <a
-                href='https://github.com/0xdedinfosec/0xdedinfosec-astro'
+                href='https://github.com/spy0x7/spy0x7-astro'
                 target='_blank'
                 rel='noopener noreferrer'
             >

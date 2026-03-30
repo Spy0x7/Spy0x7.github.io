@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://0xdedinfosec.vercel.app/sitemap-index.xml
+Sitemap: https://spy0x7.vercel.app/sitemap-index.xml

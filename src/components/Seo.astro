@@ -9,29 +9,32 @@ interface Props {
 const {
     title,
     description = 'I post My Hackthebox writeups and other InfoSec findings here.',
-    ogImage = 'https://0xdedinfosec.vercel.app/og.png',
+    ogImage = 'https://spy0x7.vercel.app/og.png',
 } = Astro.props as Props;
-const twitterHandle = '@0xdedinfosec';
+const twitterHandle = '@spy0x7';
 ---
 
 <SEO
-    title={title ? `${title} | 0xDedinfosec` : '0xDedinfosec Blogs'}
+    title={title ? `${title} | spy0x7` : 'Spy0x7 Blogs'}
     description={description}
     openGraph={{
         basic: {
-            title: '0xDedinfosec',
+            title: title ? `${title} | spy0x7` : 'Spy0x7 Blogs',
             type: 'website',
             image: ogImage,
+        },
+        optional: {
+            description,
         },
     }}
     twitter={{
         creator: twitterHandle,
         card: 'summary_large_image',
         site: twitterHandle,
-        title: '0xDedinfosec',
+        title: 'spy0x7',
         description,
         image: ogImage,
-        imageAlt: '0xDedinfosec',
+        imageAlt: 'spy0x7',
     }}
     extend={{
         link: [
@@ -43,7 +46,7 @@ const twitterHandle = '@0xdedinfosec';
         meta: [
             {
                 name: 'google-site-verification',
-                content: '2PrS27IRbrLgYfKmOC1bjuPohSqqsGbEUVY6dKD0bic',
+                content: '6zkv0IdPP57AIvam4aXqSqjJ5Ba4U1DpU5Kvyg2fxuo',
             },
             {
                 name: 'yandex-verification',
