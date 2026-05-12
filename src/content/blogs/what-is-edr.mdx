@@ -1,0 +1,221 @@
+---
+title: What is EDR? A Red Teamer's Primer on Endpoint Detection and Response
+slug: what-is-edr-a-red-teamers-primer
+description: A practical, ground-up walkthrough of how modern EDRs see you on a Windows endpoint, the four detection engines they stack on top of that telemetry, and the honest map of bypass categories red teamers actually use in the field.
+date: 2026-05-12
+image: edr/cover.png
+---
+
+import FixTheImageURL from '../../components/mdxComponents/FixTheImageURL.astro';
+import { components as MDXComponents } from '../../components/mdxComponents';
+export const components = MDXComponents;
+
+
+Assalamu Alaikum! I'm Nasur Ullah, an OSCP-certified red teamer operating from Pakistan, and one of the recurring blockers I see junior offensive operators run into — myself included, not too long ago — is a fuzzy mental model of what an **EDR** actually is. "It's the thing that catches my shells" is *technically* accurate and *operationally* useless. If you cannot describe the layer that caught you, you cannot adapt your tradecraft to defeat it on the next engagement.
+
+This write-up is the ground-up primer I wish someone had drilled into me in my first year of Windows red teaming. We will dissect what an EDR is composed of, how it observes your activity from kernel and user space, the four detection engines it stacks on top of that telemetry, and the honest map of evasion categories red teamers use in the field. This is **not** a copy-paste payload tutorial — every technique discussed has substantial behavioral footprint, and pretending otherwise is precisely how operators get rolled up. If you want a deeper research-flavored read on the same topic after finishing this, I strongly recommend [`0xdbgman`'s "EDR Internals: Research & Bypass"](https://0xdbgman.github.io/posts/edr-internals-research-and-bypass/) — most of what I cover here is the **short version** of that excellent material.
+
+---
+
+## Deconstructing the EDR: A Distributed Telemetry Pipeline, Not Magic
+
+Strip the marketing away and a modern **Endpoint Detection and Response** product is, architecturally, a **distributed sensor plus a correlation engine**. On every endpoint it deploys a coordinated set of components whose sole job is to record what processes on the box are *doing*, normalize those observations into events, ship the events to a cloud backend, and apply rules — handwritten and machine-learned — to decide whether to alert.
+
+This is the single most important shift to internalize when moving from the classic AV mindset to the EDR mindset. **AV looks at what a file is. EDR looks at what a process does.** Static-only evasion (packing, obfuscation, signature dodging) was the entire game in 2010. In 2026, a perfectly obfuscated binary that performs *behaviorally suspicious actions* will be killed on the second or third event, regardless of how clean its YARA fingerprint is.
+
+Every major vendor — **Defender for Endpoint (MDE)**, **CrowdStrike Falcon**, **SentinelOne**, **Elastic Defend**, **Sophos Intercept X**, **Cybereason** — implements roughly the same architecture. The components you should expect to find on a target endpoint are:
+
+- A **user-mode service** (e.g. `MsSense.exe` for MDE, `CSFalconService.exe` for CrowdStrike). The "brain" on the host.
+- A **user-mode DLL injected into every process** at creation time, used to install inline hooks inside `ntdll.dll`.
+- **One or more signed kernel drivers** that register kernel callbacks for process, thread, image-load, registry, and object-handle events.
+- A **file-system mini-filter driver** that observes every IRP touching the filesystem.
+- An **ETW (Event Tracing for Windows) consumer** subscribed to a curated set of providers, critically including the restricted `Microsoft-Windows-Threat-Intelligence` (ETW-TI) provider.
+- A **WFP (Windows Filtering Platform) callout driver** for network inspection at the kernel layer.
+- A **cloud transport** that uploads telemetry batches and pulls down updated detection content.
+
+Why this matters operationally: **detection is layered**. If you focus only on the user-mode hooks — which is what 80% of public "syscall bypass" content focuses on — you will still get caught by the kernel callbacks, ETW-TI, and the cloud-side correlation rules. Bypassing one layer is *not* bypassing the EDR.
+
+---
+
+## How an EDR Actually Sees You: The Visibility Surface
+
+A trivial win32 call like `CreateFileW("C:\\Users\\victim\\hello.txt", ...)` traverses the following chain on the way to actually creating a file:
+
+```
+CreateFileW           (kernel32.dll)
+   └─ CreateFileW         (kernelbase.dll)
+        └─ NtCreateFile   (ntdll.dll)      ← user-mode hook lives here
+              └─ syscall                   ← transition to kernel
+                    └─ NtCreateFile        (ntoskrnl.exe)
+                          └─ kernel callbacks fire
+                          └─ mini-filter sees IRP_MJ_CREATE
+                          └─ ETW providers emit events
+```
+
+Every horizontal line on that chain is a potential observation point. Let me walk through the four major visibility layers.
+
+### Layer 1: User-Mode Inline Hooks
+
+The injected EDR DLL rewrites the first instructions of sensitive `ntdll` stubs — `NtAllocateVirtualMemory`, `NtProtectVirtualMemory`, `NtCreateThreadEx`, `NtMapViewOfSection`, `NtWriteVirtualMemory`, `NtReadVirtualMemory`, among others — with a `JMP` redirect into EDR-controlled inspection code. The hook reads arguments, optionally inspects buffer contents, captures the calling stack, then forwards to the genuine syscall.
+
+**Pros for the defender:** rich context, easy to develop, easy to update.
+**Cons for the defender:** the hook lives in **the attacker's process address space**, which means the attacker can read it, patch it, or simply skip it.
+
+This is the layer most public bypass content targets, and frankly, **it is the easiest layer to defeat**. That is also precisely why no serious modern EDR relies on it alone.
+
+### Layer 2: Kernel Callbacks
+
+Drivers registered with the kernel receive notifications for events that the user-mode hooks can never see in time:
+
+- **`PsSetCreateProcessNotifyRoutineEx`** — fires on every process creation, with full creation context including the parent, the image path, and the command line.
+- **`PsSetCreateThreadNotifyRoutine`** — fires on every thread creation, including remote-thread creation across process boundaries.
+- **`PsSetLoadImageNotifyRoutine`** — fires on every DLL or executable image load.
+- **`ObRegisterCallbacks`** — fires on every object handle open. Critically, the EDR uses pre-operation callbacks to **strip dangerous access masks**. Try to `OpenProcess(PROCESS_VM_WRITE, ..., lsass_pid)` from a non-PPL process and watch the access mask come back reduced before your call even returns.
+- **`CmRegisterCallbackEx`** — fires on every registry operation.
+
+You cannot patch these from user mode. They run inside the attacker's process context but at kernel privilege. To silence them you need either signed kernel code, a vulnerable signed driver (BYOVD path), or a kernel exploit. All three are loud, all three are increasingly mitigated by **HVCI** and the **Microsoft Vulnerable Driver Blocklist**.
+
+### Layer 3: The File-System Mini-Filter
+
+The mini-filter framework lets EDR observe every `IRP_MJ_CREATE`, `IRP_MJ_WRITE`, `IRP_MJ_SET_INFORMATION`, and friends — meaning every dropped file, every overwrite, every rename. If your loader writes a payload to disk at any stage of the kill chain, this layer sees it. Operationally this is the single strongest argument for staying **fileless** wherever feasible.
+
+### Layer 4: ETW and ETW-TI
+
+ETW is Windows' built-in tracing system. Two flavors are relevant to red teamers:
+
+- **Regular ETW providers** (`Microsoft-Windows-Kernel-Process`, `Microsoft-Windows-DotNETRuntime`, `Microsoft-Windows-PowerShell`, and so on). Useful, mostly not security-grade by themselves.
+- **ETW-TI** (`Microsoft-Windows-Threat-Intelligence`). Restricted to **Protected Process Light (PPL)** consumers. This is the gold mine — it emits high-fidelity events for `NtAllocateVirtualMemory`, `NtProtectVirtualMemory`, `NtMapViewOfSection`, `NtReadVirtualMemory`, `NtWriteVirtualMemory`, queued APCs, driver loads, and more, *complete with full call-stack context*, all emitted from the kernel-side.
+
+You cannot subscribe to ETW-TI without PPL. EDR processes are signed and run as PPL specifically for this reason. ETW-TI is the modern crown jewel of behavioral detection, and a great deal of recent offensive R&D focuses on either avoiding events that touch it or producing events that look benign once captured.
+
+---
+
+## The Four Detection Engines: Where Telemetry Becomes an Alert
+
+Telemetry on its own is not a detection. EDRs feed the normalized event stream into four stacked engines, typically in this order:
+
+1. **Static engine** — signatures, **YARA**, hash reputation, PE structure inspection. Cheap, runs first, fast-fails known-bad samples.
+2. **Dynamic engine** — handwritten behavioral rules over the live event stream. Classic example: `Office app → cmd.exe → powershell.exe -enc <base64>`. These rules are why the same payload that worked in your lab fires three alerts in the customer environment.
+3. **Heuristic engine** — composite rules that aggregate several weak signals into one strong verdict. Cloud-side this often runs in something like KQL (`DeviceProcessEvents | join DeviceImageLoadEvents on …`).
+4. **Machine-learning engine** — two distinct flavors. *Static ML* over PE features (sections, imports, entropy, packer fingerprints). *Behavioral ML* over event sequences — essentially, "does the sequence of API calls this process makes look like the population of benign processes on this customer's tenant?"
+
+The critical insight: **bypassing one engine does not bypass the others.** An obfuscated loader with a clean YARA fingerprint can still light up the behavioral ML model because its API call sequence is anomalous. Conversely, a perfectly benign-looking signed process performing a forbidden action — say, opening a handle to `lsass.exe` with `PROCESS_VM_READ` — can sail through ML and die instantly on a handcrafted heuristic rule.
+
+---
+
+## Bypass Categories: The Honest Map
+
+This is the section everyone skips to. I am going to refuse to give you a copy-paste payload — every public payload is a YARA rule waiting to happen — but I will give you the **mental map** of categories, what each one attacks, and what it does *not* defeat. Code-level depth lives in `0xdbgman`'s article and the further-reading references at the end of this post.
+
+### 1. Static Evasion
+
+Symbol and section renaming, compile-time string and code encryption, control-flow flattening, **API hashing** (FNV-1a, djb2, custom), runtime API resolution via **PEB walking**, polymorphic stubs. Goal: defeat the static engine.
+
+**What it does not defeat:** anything behavioral. A perfectly packed binary that calls `WriteProcessMemory` followed by `CreateRemoteThread` targeting `lsass.exe` still trips every dynamic and heuristic engine in production.
+
+### 2. Unhooking and Syscall Bypass
+
+The classic move: skip the user-mode `ntdll` hook.
+
+- **Manual unhooking** — load a fresh copy of `ntdll.dll` from disk (or a suspended process's memory) and restore the `.text` section. Trips memory-scanning rules looking for `.text` overwrites and unbacked executable mappings.
+- **Direct syscalls** — embed the `syscall` instruction in your own binary, using SSN-resolution techniques like **Hell's Gate** (parse stub bytes), **Halo's Gate** (fall back to adjacent stubs when bytes are patched), **FreshyCalls** (sort exports by ordinal), the **SysWhispers** family, **RecycledGate**.
+- **Indirect syscalls** — execute the `syscall` instruction *from inside `ntdll.dll`* via a gadget, so the return address on the saved kernel stack frame stays inside a legitimate signed module. This is now table stakes for any serious loader.
+
+**What it does not defeat:** kernel callbacks (which fire after the syscall enters the kernel), **ETW-TI** (same — emitted from the kernel side), or kernel-side call-stack analysis.
+
+### 3. Injection Techniques, Ranked by Telemetry Footprint
+
+There is no "undetectable" injection technique. There are techniques with **different telemetry footprints**, and the right choice depends on which signals the target EDR weights highest in its rule pack.
+
+| Technique | Why It Is Loud | Why It Sometimes Still Works |
+|---|---|---|
+| `CreateRemoteThread` | Hits thread-creation callback, well-known. | Trivial to write; works against weak telemetry. |
+| APC injection (`NtQueueApcThreadEx`) | Cross-process APC is in ETW-TI. | No `CreateRemoteThread` event. |
+| Process hollowing | PEB inconsistency, image base mismatch. | Bypasses some path-based rules. |
+| Process ghosting / doppelgänging | Abuses NTFS transactions / delete-pending state. | Defeats most static signatures. |
+| Reflective DLL loading | Private RX memory with no backing image. | Defeats image-load and path rules. |
+| Module stomping | Lives inside a real signed module's memory range. | Looks image-backed to memory scanners. |
+| Early-bird APC | Runs *before* the EDR's DLL fully attaches. | Hits a real race window. |
+| Thread name spoofing / fiber injection | Avoids creating a tracked thread. | Niche but effective on lazy rule packs. |
+
+### 4. Sleep Obfuscation
+
+Most implants spend 99% of their wall-clock time *sleeping*. During that time the implant region is `RX` and the shellcode sits there in plaintext — trivial for an in-memory scanner. Techniques like **Ekko** (timer-queue ROP), **FOLIAGE** (APC chain), **Zilean**, **Cronos**, **DeathSleep**, **DreamWalkers** flip the region to `RW`, encrypt the contents, sleep, then decrypt and re-flip to `RX` on wake.
+
+**What it defeats:** in-memory scans during the sleep window.
+**What it generates:** a great many `NtProtectVirtualMemory` events that ETW-TI cheerfully records. Frequency analysis on these events catches naive implementations very effectively.
+
+### 5. Call-Stack Spoofing
+
+When EDR captures a stack at the moment of a sensitive call, your return addresses point into your beacon's own memory, not into `kernel32.dll` and `ntdll.dll` like a legitimate thread's would. That alone is a signal.
+
+**SilentMoonwalk** and conceptually similar tooling desynchronize the unwinder so that the *actual* execution path is preserved at runtime, but the stack *as captured by the analyzer* presents a benign call chain rooted in legitimate signed modules. This is currently the high-ground for stealthy sensitive callbacks.
+
+### 6. AMSI and ETW Patching — and the Patchless Successor
+
+The old technique: patch `AmsiScanBuffer` or `EtwEventWrite` in memory with `xor rax, rax; ret`. EDR vendors have long since noticed — they hash and re-verify the `.text` of these functions on a schedule.
+
+The patchless successor: install a **hardware breakpoint** by writing the target address into DR0–DR3 debug registers, then in the vectored exception handler tamper with the function arguments or forced return value. Because no bytes in `.text` change, integrity checks pass. The same trick works on several ETW emit points.
+
+### 7. PPL and BYOVD Territory
+
+If you can run code in the kernel — for example by loading a vulnerable signed driver — you can elevate your own process to PPL, blind ETW-TI from user space, unregister kernel callbacks, and so on. This is the boss-level bypass, and it is exactly what **HVCI** plus the **Vulnerable Driver Blocklist** are designed to stop. On a hardened, modern Windows 11 box, this path is mostly closed; on a less-hardened estate it remains operationally viable but loud.
+
+---
+
+## What Still Survives Every Bypass: The Honest Bottom Line
+
+Here is the part that matters most, and it is the part most "syscall tutorials" never tell you. Even with textbook tradecraft — indirect syscalls, hardware-breakpoint AMSI bypass, encrypted sleep with stack spoofing — the following kernel-side signals **still get emitted**:
+
+- ETW-TI events for memory operations, regardless of how cleverly you reach the syscall.
+- Object-handle callbacks with reduced access masks. You cannot get `PROCESS_VM_WRITE` against `lsass.exe` from a non-PPL process without going through the callback.
+- Image-load callbacks for every DLL touched on disk.
+- **Intel TDT** (Threat Detection Technology) and CPU-level telemetry on supported hardware — CET shadow stacks, branch-trace storage, last-branch records.
+
+**The conclusion every red teamer should internalize:** *user-mode hook bypass is solved tradecraft. Kernel-side telemetry is the real problem.* Modern operator tradecraft is about **minimizing the kernel events you emit**, not about hiding from the user-mode hooks anyone can patch out in fifty lines of C.
+
+Practical consequences for your engagements:
+
+- **Stay off disk.** Every disk write is a mini-filter event waiting to correlate against your process tree.
+- **Stay off lsass directly.** Prefer indirect credential paths — DPAPI offline, Kerberoasting, AS-REProasting, coercion + relay — when the engagement scope permits.
+- **Sleep long, sleep encrypted, sleep with stack spoofing.** Then sleep longer.
+- **Pick your injection technique by telemetry footprint, not by tutorial date.** Older does not mean worse; *louder* means worse.
+- **Reduce dwell time.** Time on host equals events emitted equals correlation opportunities for the SOC. Get in, do the objective, get out.
+
+---
+
+## How I Approach Researching a Specific EDR
+
+When I need to understand a specific product, the loop I follow is roughly the eight-phase pattern `0xdbgman` documents:
+
+1. **Build a lab.** Isolated VM, snapshot baselines, a second VM as the simulated C2 receiver, full packet capture between them.
+2. **Enumerate.** `tasklist /svc`, `driverquery /si`, `fltmc instances`, `logman query providers`, `Get-WinEvent -ListProvider`, plus `Get-MpComputerStatus` for the Defender layer.
+3. **Observe.** Run **Procmon**, **PerfView**, and **Sysmon** during normal red-team actions to see what the product captures and what it ignores.
+4. **Reverse the user-mode and kernel components.** IDA and Ghidra on the service binary and the driver. Identify registered callbacks via cross-references to the well-known `PsSet*NotifyRoutine*` and `Ob*Callbacks` APIs. Enumerate the driver's IOCTL surface.
+5. **Run single-variable bypass experiments.** Change *one* thing, compare telemetry before and after, document the delta.
+6. **Validate detections in both directions.** Do not just confirm your bypass works — confirm what *would have caught* it on a stock configuration.
+7. **Author a detection pack** for the bypass. This is the step juniors skip and seniors deliver as part of the report.
+8. **Write the engagement up properly.** Findings, technical detection guidance, IR playbook for if the technique is observed again.
+
+Do steps 1–8 against a single EDR for one focused month and you will know more about that product than 95% of red teamers do. Do it against three products in a year and you become genuinely dangerous in a way no public tooling can replicate.
+
+---
+
+## Closing Thoughts
+
+EDR is not magic and it is not invincible — but it is also emphatically not "AV with a fancier dashboard." It is a layered telemetry pipeline, the kernel-side providers are genuinely impressive pieces of engineering, and the cloud-side correlation work is where most of the actual detection wins happen. If you walk into an engagement expecting to disable the product with a one-liner from a 2018 blog post, you are going to get burned, and the SOC is going to enjoy your TTPs for free.
+
+The right mindset is this: **assume telemetry is being emitted, and design tradecraft that emits the least interesting events possible.** That is the entire game on a modern Windows estate.
+
+### Further Reading
+
+- `0xdbgman` — [EDR Internals: Research & Bypass](https://0xdbgman.github.io/posts/edr-internals-research-and-bypass/). The deep version of this primer.
+- **MITRE ATT&CK** — Defense Evasion (TA0005), Credential Access (TA0006).
+- **Microsoft Docs** — *Filter Manager Concepts*, *Process and Thread Notification Routines*, *Microsoft-Windows-Threat-Intelligence ETW provider*.
+- **Outflank** — *Direct Syscalls vs Indirect Syscalls* blog series.
+- **Cobalt Strike** — sleep mask and stack-spoof technical posts.
+- **SilentMoonwalk** — original whitepaper and reference implementation.
+
+If anything in here is wrong — and given how fast this space moves, something almost certainly will be by the time you read it — ping me on Twitter/X and I'll update the post. I learn this stuff the same way you do: one mistake at a time.
+
+— Nasur (Spy0x7)
